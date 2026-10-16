@@ -1,0 +1,3642 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="Learn Morse code by ear with the Koch method. Works offline.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Morse Trainer">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20rx%3D%22110%22%20fill%3D%22%230b1220%22%2F%3E%3Crect%20x%3D%2240%22%20y%3D%2240%22%20width%3D%22432%22%20height%3D%22432%22%20rx%3D%2280%22%20fill%3D%22%23131c2f%22%20stroke%3D%22%2326334f%22%20stroke-width%3D%228%22%2F%3E%3Crect%20x%3D%2286%22%20y%3D%22226%22%20width%3D%22130%22%20height%3D%2260%22%20rx%3D%2230%22%20fill%3D%22%2338bdf8%22%2F%3E%3Crect%20x%3D%22240%22%20y%3D%22226%22%20width%3D%22130%22%20height%3D%2260%22%20rx%3D%2230%22%20fill%3D%22%2338bdf8%22%2F%3E%3Ccircle%20cx%3D%22416%22%20cy%3D%22256%22%20r%3D%2230%22%20fill%3D%22%2338bdf8%22%2F%3E%3C%2Fsvg%3E" type="image/svg+xml">
+  <title>Morse Trainer</title>
+  <style>
+:root {
+  --bg: #0b1220;
+  --panel: #131c2f;
+  --panel2: #1b2742;
+  --line: #26334f;
+  --text: #e5ecf7;
+  --muted: #8a9ab8;
+  --accent: #38bdf8;
+  --accent-ink: #04202e;
+  --good: #4ade80;
+  --warn: #fbbf24;
+  --bad: #f87171;
+  --radius: 14px;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overscroll-behavior: none; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:disabled { opacity: .45; cursor: default; }
+h1 { margin: 0; font-size: 1.5rem; }
+h2 { margin: .2em 0 .6em; }
+p { margin: .4em 0; }
+b { font-weight: 650; }
+
+#app { display: flex; flex-direction: column; height: 100dvh; max-width: 560px; margin: 0 auto; }
+.screen { flex: 1; overflow-y: auto; padding: 16px 16px 24px; padding-top: max(16px, env(safe-area-inset-top)); }
+#nav { display: flex; background: var(--panel); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom); }
+#nav button { flex: 1; background: none; border: 0; padding: 8px 4px 10px; display: flex; flex-direction: column;
+  align-items: center; gap: 2px; font-size: .72rem; color: var(--muted); }
+#nav button.active { color: var(--accent); }
+.nav-ic { font-size: 1.3rem; }
+.no-nav #nav { display: none; }
+
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+.center { text-align: center; }
+.hidden { display: none !important; }
+.grow { flex: 1; }
+.good-text { color: var(--good); }
+.row { display: flex; align-items: center; gap: 10px; }
+.between { justify-content: space-between; }
+.stack { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.top h1 + p { margin: 2px 0 0; }
+.top-pills { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.badge { background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-weight: 650; font-size: .92rem; }
+.badge-strip { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: .85rem; flex-wrap: wrap; }
+.badge-icons { display: inline-flex; align-items: center; gap: 5px; font-size: 1.15rem; }
+.badge-icons span.locked { opacity: .25; filter: grayscale(1); }
+.badge-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
+.badge-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line); text-align: left; }
+.badge-item.earned { border-color: var(--accent); background: rgba(245, 185, 66, .1); }
+.badge-item.locked { opacity: .45; }
+.badge-ic { font-size: 1.55rem; line-height: 1; flex-shrink: 0; }
+.badge-item.locked .badge-ic { filter: grayscale(1); }
+.badge-info { display: flex; flex-direction: column; min-width: 0; }
+.badge-info b { font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.badge-info small { color: var(--muted); font-size: .78rem; }
+.badge-item.earned .badge-info small { color: var(--accent); }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
+.card > b:first-child { display: block; margin-bottom: 8px; }
+.row.between > b:first-child { margin-bottom: 0; }
+.msg { background: var(--panel2); }
+.msg.good { border-color: var(--good); }
+
+.btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; font-weight: 600; text-align: center; }
+.btn:active { transform: scale(.98); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.ghost { background: transparent; }
+.btn.small { padding: 7px 12px; font-size: .9rem; }
+.btn.big { padding: 16px; font-size: 1.1rem; }
+.btn.danger { color: var(--bad); border-color: #5b2a2a; }
+.install { width: 100%; margin-top: 4px; }
+
+/* bars & rings */
+.bar { height: 8px; background: var(--panel2); border-radius: 99px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width .3s; }
+.bar.good .bar-fill { background: var(--good); }
+.bar.ok .bar-fill { background: var(--warn); }
+.bar.bad .bar-fill { background: var(--bad); }
+.ring { --p: 0; width: 140px; height: 140px; border-radius: 50%; margin: 6px auto 14px; display: grid; place-items: center;
+  background: conic-gradient(var(--accent) calc(var(--p) * 1%), var(--panel2) 0); }
+.ring-in { width: 112px; height: 112px; border-radius: 50%; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring-in b { font-size: 1.9rem; }
+.ring-in small { color: var(--muted); }
+
+/* dots & dashes */
+.pattern { display: inline-flex; align-items: center; gap: 4px; }
+.pattern i { display: inline-block; height: 8px; background: var(--accent); border-radius: 99px; }
+.pattern .dot { width: 8px; }
+.pattern .dash { width: 24px; }
+
+/* home */
+.modes { display: flex; flex-direction: column; gap: 0; }
+.mode { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; }
+.mode.soon { opacity: .5; }
+.mode-ic { font-size: 2rem; }
+.mode-tx { display: flex; flex-direction: column; flex: 1; }
+.mode-tx small { color: var(--muted); }
+.chev { font-size: 1.8rem; color: var(--muted); }
+.big-num { font-size: 1.5rem; }
+
+/* chips */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 4px; justify-content: center; }
+.chip { min-width: 36px; height: 38px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line); font-weight: 650; }
+.chip.on { border-color: var(--accent); }
+.chip.new { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.chip.locked { opacity: .35; }
+
+/* tiles */
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+.tiles.four { grid-template-columns: repeat(2, 1fr); }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; text-align: center; }
+.tile b { display: block; font-size: 1.25rem; }
+.tile small { color: var(--muted); }
+
+/* week */
+.week { display: flex; justify-content: space-between; margin-top: 10px; }
+.wk { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--muted); }
+.wk-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); }
+.wk.part .wk-dot { background: linear-gradient(90deg, var(--accent) 50%, transparent 50%); border-color: var(--accent); }
+.wk.full .wk-dot { background: var(--good); border-color: var(--good); }
+.wk.today small { color: var(--text); font-weight: 700; }
+.streak { font-size: 2.6rem; font-weight: 700; }
+
+/* weak list */
+.weak { display: flex; flex-direction: column; gap: 6px; }
+.weak-row { display: grid; grid-template-columns: 32px 70px 1fr 42px; align-items: center; gap: 8px; background: none; border: 0; padding: 4px 0; text-align: left; }
+.weak-ch { font-size: 1.3rem; font-weight: 700; }
+.weak-pct { text-align: right; color: var(--muted); font-size: .85rem; }
+
+/* learn */
+.learn { display: flex; flex-direction: column; align-items: center; padding-top: 6vh; }
+.learn-ch { font-size: 7rem; font-weight: 800; line-height: 1; color: var(--accent); }
+.learn-pat { margin: 16px 0 6px; transform: scale(1.7); }
+.learn-say { font-size: 1.4rem; margin: 10px 0 14px; letter-spacing: .04em; }
+.learn .stack { width: 100%; }
+
+/* chart & heatmap */
+.chart { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.chart-cell { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.chart-cell.locked { opacity: .4; }
+.chart-ch { font-size: 1.5rem; font-weight: 700; }
+.heatmap { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin: 8px 0; }
+.heat { aspect-ratio: 1; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); font-weight: 700; }
+.heat.locked { opacity: .35; }
+
+/* settings */
+.set { display: block; margin: 12px 0; }
+.set input[type=range] { width: 100%; accent-color: var(--accent); margin-top: 6px; }
+
+/* result */
+.missed-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.missed { display: inline-flex; align-items: center; gap: 8px; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; }
+.missed b { font-size: 1.2rem; }
+
+/* practice */
+.screen-practice { padding: 12px 14px; display: flex; flex-direction: column; }
+.practice { flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.p-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.p-title { font-weight: 650; }
+.p-meter { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 84px; text-align: right; }
+.p-stage { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px; min-height: 0; overflow-y: auto; }
+.p-actions { display: flex; gap: 10px; }
+.p-actions .btn { flex: 1; padding: 14px; }
+.ready { text-align: center; }
+.big-icon { font-size: 3.2rem; }
+.listen { display: flex; justify-content: center; align-items: center; gap: 6px; height: 56px; }
+.listen i { width: 8px; height: 10px; border-radius: 4px; background: var(--panel2); transition: background .2s; }
+.listen.playing i { background: var(--accent); animation: eq .7s ease-in-out infinite alternate; animation-delay: calc(var(--i) * 90ms); }
+@keyframes eq { from { height: 8px; } to { height: 52px; } }
+.slots { display: flex; justify-content: center; gap: 8px; }
+.slot { width: 52px; height: 64px; border-radius: 12px; border: 2px solid var(--line); background: var(--panel);
+  display: grid; place-items: center; font-size: 1.9rem; font-weight: 700; }
+.slot.active { border-color: var(--accent); }
+.slot.filled { border-color: var(--text); }
+.kb { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; padding-bottom: env(safe-area-inset-bottom); }
+.key { height: 44px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line); font-weight: 650; font-size: 1.05rem; padding: 0; position: relative; }
+.key:active { background: var(--accent); color: var(--accent-ink); }
+.key.newest { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.key.wide { grid-column: span 2; }
+@media (max-width: 380px) { .kb { grid-template-columns: repeat(7, 1fr); } .slot { width: 46px; } }
+
+/* mobile input pad modes (#1-#4) */
+.kb-wrap { padding-bottom: env(safe-area-inset-bottom); }
+.kb-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.kb-cards .key { height: 62px; font-size: 1.55rem; font-weight: 750; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.kb-cards .key.odd-last { grid-column: span 2; }
+.kb-cards .key.back { grid-column: span 2; height: 44px; font-size: 1rem; color: var(--muted); }
+.kb-keys.compact { grid-template-columns: repeat(6, 1fr); }
+.kb-keys.compact .key { height: 48px; font-size: 1.15rem; }
+.kb-ditdah, .kb-tree { display: flex; flex-direction: column; gap: 8px; }
+.dd-bar { min-height: 40px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px 12px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dd-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dd-btn { height: 68px; border-radius: 14px; background: var(--panel2); border: 2px solid var(--accent);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-weight: 750; }
+.dd-btn b { font-size: 1.7rem; line-height: 1; color: var(--accent); }
+.dd-btn small { color: var(--muted); font-size: .8rem; }
+.dd-btn:active { background: var(--accent); color: var(--accent-ink); }
+.dd-btn:active b, .dd-btn:active small { color: var(--accent-ink); }
+.dd-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dd-actions .key { height: 42px; }
+.key.pick-ready { border-color: var(--good); color: var(--good); }
+.tree-view { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; gap: 8px; }
+.tree-branch { font-size: .9rem; color: var(--muted); display: flex; flex-direction: column; align-items: center; }
+.tree-branch b { font-size: 1.2rem; color: var(--text); }
+.tree-branch.dim { opacity: .35; }
+.tree-cur { display: flex; flex-direction: column; align-items: center; min-width: 72px; }
+.tree-cur b { font-size: 2rem; line-height: 1.05; color: var(--accent); }
+.tree-btns { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 8px; }
+.tree-btns .key { height: 54px; font-size: 1.05rem; }
+.seg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 6px; }
+.seg.three { grid-template-columns: repeat(3, 1fr); }
+.seg-btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: .88rem; font-weight: 600; color: var(--muted); }
+.seg-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(56, 189, 248, .1); }
+.seg-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Set 2: Q-Codes & Callsigns study + quiz */
+.lock-banner { background: var(--panel2); border: 1px dashed var(--line); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+.lock-banner .lock-ic { font-size: 1.6rem; }
+.qso-item { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 8px; }
+.qso-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.qso-code { font-size: 1.25rem; font-weight: 800; color: var(--accent); letter-spacing: .04em; }
+.qso-meaning { font-weight: 650; margin-bottom: 4px; }
+.qso-ex { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .84rem; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; margin-top: 6px; color: var(--accent); }
+.quiz-opts { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px; }
+.quiz-opt { background: var(--panel2); border: 2px solid var(--line); border-radius: 12px; padding: 12px 14px; text-align: left; font-weight: 600; }
+.quiz-opt.correct { border-color: var(--good); background: rgba(52, 211, 153, .12); color: var(--good); }
+.quiz-opt.wrong { border-color: var(--bad); background: rgba(248, 113, 113, .12); color: var(--bad); }
+
+/* Stats page completed lessons and words/callsigns */
+.stats-subcard { background: var(--panel2); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; margin-top: 10px; }
+.stats-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; max-height: 280px; overflow-y: auto; padding-right: 4px; }
+.stats-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; width: 100%; text-align: left; font-family: inherit; color: inherit; cursor: pointer; }
+.stats-item:hover, .stats-item:focus { border-color: var(--accent); }
+.stats-item.done { border-color: rgba(52, 211, 153, 0.45); }
+.stats-item.next { border-color: var(--accent); background: rgba(56, 189, 248, 0.08); }
+.stats-item.locked { opacity: 0.65; }
+.stats-item-left { display: flex; align-items: center; gap: 10px; }
+.stats-item-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.stats-lesson-num { font-weight: 800; color: var(--accent); font-size: .95rem; min-width: 32px; }
+.stats-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; max-height: 180px; overflow-y: auto; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.word-chip { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .88rem; font-weight: 700; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; color: var(--text); cursor: pointer; }
+.word-chip:hover, .word-chip:focus { border-color: var(--accent); color: var(--accent); }
+
+.fb-score { text-align: center; font-size: 1.4rem; font-weight: 700; }
+.fb-score.good { color: var(--good); }
+.fb-grid { display: flex; justify-content: center; gap: 8px; }
+.fb-col { width: 52px; border-radius: 12px; overflow: hidden; border: 2px solid var(--line); text-align: center; }
+.fb-exp { font-size: 1.8rem; font-weight: 700; padding: 8px 0; background: var(--panel); }
+.fb-got { padding: 6px 0; font-weight: 650; background: var(--panel2); }
+.fb-col.ok { border-color: var(--good); }
+.fb-col.ok .fb-got { color: var(--good); }
+.fb-col.bad { border-color: var(--bad); }
+.fb-col.bad .fb-got { color: var(--bad); }
+.fb-missed { text-align: center; }
+.fb-missed .missed { margin: 3px; }
+
+/* toggle card */
+.toggle { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.toggle input { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
+.toggle span { display: flex; flex-direction: column; }
+
+/* arcade */
+.screen-arcade-play { padding: 10px 12px; display: flex; flex-direction: column; }
+.arcade { flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 0; position: relative; }
+.a-hud { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; }
+.a-mid { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+.a-score { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.a-combo { font-size: .8rem; color: var(--warn); min-height: 1em; }
+.a-right { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
+.a-lives { color: var(--bad); font-size: 1.15rem; letter-spacing: 2px; }
+.a-level { color: var(--muted); font-size: .8rem; }
+.field { flex: 1; position: relative; overflow: hidden; border-radius: var(--radius); border: 1px solid var(--line);
+  background: radial-gradient(circle at 50% 0%, #16223d 0%, var(--bg) 70%); min-height: 220px; }
+.field .danger { position: absolute; left: 0; right: 0; bottom: 0; height: 6px;
+  background: repeating-linear-gradient(90deg, var(--bad) 0 12px, transparent 12px 20px); opacity: .7; }
+.field.hit { animation: hit .4s; }
+@keyframes hit { 0%, 100% { box-shadow: none; } 30% { box-shadow: inset 0 -40px 40px -20px rgba(248,113,113,.6); } }
+.drop { position: absolute; top: 0; min-width: 56px; height: 56px; padding: 0 10px; border-radius: 28px; border: 2px solid var(--accent);
+  background: var(--panel2); font-size: 1.6rem; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 18px rgba(56,189,248,.25); will-change: transform; }
+.drop.hint .pattern { gap: 3px; }
+.drop.hint .pattern .dot { width: 7px; height: 7px; }
+.drop.hint .pattern .dash { width: 16px; height: 7px; }
+.drop.wrong { border-color: var(--bad); box-shadow: 0 0 18px rgba(248,113,113,.35); }
+.drop.wrong .pattern i { background: var(--bad); }
+.drop.pop { background: var(--good); color: #052e14; border-color: var(--good); animation: pop .45s forwards; }
+.drop.land { background: var(--bad); color: #3b0a0a; border-color: var(--bad); animation: fade .45s forwards; }
+.drop.shake { animation: shake .35s; }
+@keyframes pop { to { opacity: 0; scale: 1.6; } }
+@keyframes fade { to { opacity: 0; } }
+@keyframes shake { 20%, 60% { margin-left: -6px; } 40%, 80% { margin-left: 6px; } }
+.floater { position: absolute; transform: translateX(-50%); font-weight: 800; pointer-events: none; animation: rise .9s forwards; white-space: nowrap; }
+.floater.good { color: var(--good); }
+.floater.bad { color: var(--bad); }
+.floater.level { color: var(--warn); font-size: 1.6rem; }
+@keyframes rise { from { opacity: 1; } to { opacity: 0; margin-top: -50px; } }
+.overlay { position: absolute; inset: 0; background: rgba(5, 9, 18, .75); display: grid; place-items: center; z-index: 5; }
+.overlay .card { width: min(320px, 90%); }
+
+/* send mode (straight keyer) */
+.screen-send-play { padding: 12px 14px; display: flex; flex-direction: column; }
+.send-stage { justify-content: space-between; align-items: stretch; gap: 10px; }
+.slot.ok { border-color: var(--good); color: var(--good); }
+.slot.bad { border-color: var(--bad); color: var(--bad); }
+.send-prompt { text-align: center; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; }
+.send-ch { font-size: 3.8rem; font-weight: 800; line-height: 1.05; color: var(--accent); }
+.send-hint { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 6px; }
+.send-live { min-height: 40px; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px;
+  padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.send-pat i { height: 10px; }
+.send-pat .dot { width: 10px; }
+.send-pat .dash { width: 28px; }
+.send-decoded { font-weight: 750; font-size: 1.2rem; color: var(--muted); }
+.send-decoded.good { color: var(--good); }
+.send-decoded.bad { color: var(--bad); }
+.send-meter { display: flex; flex-direction: column; gap: 4px; }
+.hold-bar { position: relative; height: 12px; background: var(--panel2); border-radius: 99px; overflow: hidden; border: 1px solid var(--line); }
+.hold-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 99px; }
+.hold-fill.dah { background: var(--good); }
+.hold-split { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--warn); }
+.keyer-pad { flex: 1; min-height: 130px; max-height: 200px; border-radius: 20px; border: 2px solid var(--accent);
+  background: radial-gradient(circle at 50% 30%, #1e3154 0%, var(--panel) 80%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  user-select: none; touch-action: none; box-shadow: 0 6px 24px rgba(56, 189, 248, .18); transition: transform .05s, background .1s; }
+.keyer-pad.active, .keyer-pad:active { transform: scale(.98); background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 28px rgba(56, 189, 248, .55); }
+.keyer-pad.active small, .keyer-pad:active small { color: var(--accent-ink); }
+.keyer-ic { font-size: 2rem; }
+.keyer-pad b { font-size: 1.35rem; letter-spacing: .05em; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <main id="screen" class="screen"></main>
+    <nav id="nav"></nav>
+  </div>
+  <noscript>This app needs JavaScript.</noscript>
+
+  <script id="mt-bundle">
+/* ==================== morse.js ==================== */
+/* Morse data + pure logic (no DOM). Works in browser and in test pages. */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+
+  MT.CODE = {
+    A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....',
+    I: '..', J: '.---', K: '-.-', L: '.-..', M: '--', N: '-.', O: '---', P: '.--.',
+    Q: '--.-', R: '.-.', S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-',
+    Y: '-.--', Z: '--..',
+    '0': '-----', '1': '.----', '2': '..---', '3': '...--', '4': '....-',
+    '5': '.....', '6': '-....', '7': '--...', '8': '---..', '9': '----.',
+    '.': '.-.-.-', ',': '--..--', '?': '..--..', '/': '-..-.'
+  };
+
+  MT.DECODE = {};
+  for (const ch in MT.CODE) MT.DECODE[MT.CODE[ch]] = ch;
+
+  /** Koch / LCWO character order. Lesson N unlocks the first N+1 characters. */
+  MT.KOCH = 'KMRSUAPTLOWI.NJEF0Y,VG5/Q9ZH38B?427C1D6X'.split('');
+
+  /** Lesson milestone badges: 1st, 5th, and every 5th lesson after that (1, 5, 10, 15, 20, 25, 30, 35). */
+  MT.BADGES = [
+    { lesson: 1,  icon: '🌱', title: 'First Contact' },
+    { lesson: 5,  icon: '⚡', title: 'Spark Listener' },
+    { lesson: 10, icon: '🎧', title: 'Signal Scout' },
+    { lesson: 15, icon: '📻', title: 'Novice Operator' },
+    { lesson: 20, icon: '📡', title: 'Relay Station' },
+    { lesson: 25, icon: '🛰️', title: 'DX Copyist' },
+    { lesson: 30, icon: '🏅', title: 'Senior Telegrapher' },
+    { lesson: 35, icon: '👑', title: 'Master of the Key' }
+  ];
+
+  /** Set 2 (Q-Codes & Callsigns) milestone badges: 1, 3, 6, 9, 12, 15. */
+  MT.QSO_BADGES = [
+    { lesson: 1,  icon: '📖', title: 'Code Scholar' },
+    { lesson: 3,  icon: '🧭', title: 'Lingo Navigator' },
+    { lesson: 6,  icon: '🎓', title: 'Lingo Graduate' },
+    { lesson: 9,  icon: '🎙️', title: 'Traffic Copyist' },
+    { lesson: 12, icon: '📡', title: 'Callsign Ranger' },
+    { lesson: 15, icon: '🌐', title: 'DX Ragchewer' }
+  ];
+
+  /**
+   * Built-in word list for Words / Callsigns practice (unlocks after Lesson 20).
+   * Heavily stocked with words made from the first 21 Koch characters (KMRSUAPTLOWI.NJEF0Y,V)
+   * plus words that unlock as G, Q, Z, H, B, C, D, X are added in Lessons 21–39.
+   */
+  MT.WORDS = (
+    'AIM AIR ALL ALSO ALTO ALWAYS AMBER ANTENNA APRIL AREA ARM ART ASK ATOM AUTO AWAY ' +
+    'EAR EARLY EAST EASY EAT ELFIN ELITE EMPIRE EMPTY ENTER ENTRY EQUAL ERA EVEN EVENT EVER EVERY ' +
+    'FAIL FAIR FALL FALSE FAMILY FAR FARM FAST FAULT FEAR FEEL FELT FEW FILE FILL FILM FINAL FINE FIRE FIRM FIRST FIVE FLAT FLEW FLOAT FLOOR FLOW FLOWER FLY FOAM FOLLOW KEY KEYER KILN KILT KING KISS KITE KNEE KNEW KNIFE KNOT KNOW ' +
+    'LATE LATER LAW LAWN LAY LAYER LEAF LEAN LEAP LEARN LEAST LEAVE LEFT LIFE LIFT LIKE LIME LIMIT LINE LINK LION LIP LIST LISTEN LIVE LOAN LOCAL LOCK LOFT LONE LONG LOOK LOOP LOOSE LORE LOSS LOST LOT LOUD LOVE LOW LOWER LUCK ' +
+    'MAIL MAIN MAKE MALE MALL MAN MANY MAP MARK MARKET MARS MASS MASTER MAT MATE MATTER MAY MAYOR MEAL MEAN MEAT MEET MELT MEMORY MEN METAL METER MILE MILK MILL MINE KISS MINT MISS MIST MIX MOAT MODE MODEL MOIST MOLE MOMENT MONEY MONTH MOON MORE MORSE MOST MOTION MOTOR MOUNT MOUSE MOUTH MOVE MUCH MUST MYSELF ' +
+    'NAIL NAME NARROW NATION NATURE NAVY NEAR NEAT NECK NEED NERVE NEST NET NEVER NEW NEWS NEXT NICE NIGHT NINE NOISE NONE NOON NOR NORMAL NORTH NOSE NOTE NOVEL NOW NURSE NUT ' +
+    'OAK OAR OAT OCEAN OFFER OFFICE OIL OKAY OLD OLIVE OMIT ONCE ONE ONLY OPEN OPERA OPINION OPTION ORAL ORANGE ORDER ORGAN ORIGIN OTHER OUR OUT OUTER OVAL OVEN OVER OWN OWNER ' +
+    'PACE PACK PAGE PAIN PAINT PAIR PALE PALM PAN PANEL PAPER PARK PART PARTY PASS PAST PASTE PATH PAUSE PAW PAY PEACE PEAK PEAR PEARL PEN PENNY PEOPLE PEPPER PERIL PERIOD PERMIT PERSON PET PHASE PHONE PHOTO PIANO PICK PIE PIECE PILOT PIN PINE PINK PIPE PIT PITCH PITY PLACE PLAIN PLAN PLANE PLANET PLANT PLATE PLAY PLAYER PLEA PLEASE PLOT PLOW PLUS POEM POET POINT POLE POLICE POLICY POLL POND POOL POOR POP PORT POSE POST POT POTATO POUR POWER PRAISE PRAY PRESS PRICE PRIDE PRIME PRINT PRIOR PRIZE PROBE PROFIT PROOF PROPER PROVE PUBLIC PULL PULSE PUMP PURE PUSH PUT ' +
+    'RADIO RAIL RAIN RAISE RAKE RAMP RAN RANGE RANK RAPID RARE RATE RATIO RAW RAY REACH READ READY REAL REASON REBEL RECEIVE RECENT RECORD RED REEF REEL REFER REGRET REGULAR REIGN REJECT RELATE RELAX RELAY RELIEF RELY REMAIN REMARK REMEDY REMIND REMOTE REMOVE RENT REPAIR REPEAT REPLACE REPLY REPORT REST RESULT RETAIN RETIRE RETURN REVEAL REVIEW REWARD RHYTHM RICE RICH RIDE RIDGE RIFLE RIGHT RIM RING RIOT RIPE RISE RISK RIVAL RIVER ROAD ROAR ROAST ROBIN ROBOT ROCK ROCKET ROD ROLE ROLL ROOF ROOM ROOT ROPE ROSE ROUGH ROUND ROUTE ROVERS ROW ROYAL RUB RUDE RUG RULE RULER RUN RURAL RUSH RUST ' +
+    'SAFE SAIL SAKE SALE SALT SAME SAMPLE SAND SANE SATIN SAVE SAW SAY SCALE SCAN SCARCE SCENE SCENT SCHOOL SCIENCE SCOPE SCORE SCRAP SCREEN SCRIPT SEA SEAL SEARCH SEASON SEAT SECOND SECRET SECT SECURE SEE SEED SEEK SEEM SEEN SELECT SELF SELL SEMI SEND SENSE SENT SERIES SERIOUS SERVE SESSION SET SETTLE SEVEN SEVERAL SHADE SHADOW SHAKE SHALL SHAME SHAPE SHARE SHARP SHEEP SHEET SHELF SHELL SHIFT SHINE SHIP SHIRT SHOCK SHOE SHOOT SHOP SHORE SHORT SHOT SHOULD SHOUT SHOW SHOWER SHUT SICK SIDE SIGH SIGHT SIGN SIGNAL SILENT SILK SILVER SIMILAR SIMPLE SINCE SING SINGLE SINK SIR SISTER SIT SITE SIX SIZE SKILL SKIN SKY SLAVE SLEEP SLICE SLIDE SLIGHT SLIM SLIP SLOW SMALL SMART SMELL SMILE SMOKE SMOOTH SNAKE SNAP SNOW SOAK SOAP SOAR SOCIAL SOCK SOFT SOIL SOLAR SOLD SOLDIER SOLE SOLID SOLVE SOME SON SONG SOON SORE SORRY SORT SOUL SOUND SOUP SOUR SOUTH SPACE SPAN SPARE SPARK SPEAK SPECIAL SPEED SPELL SPEND SPHERE SPICE SPIN SPIRIT SPLIT SPOIL SPOKE SPORT SPOT SPRAY SPREAD SPRING SQUARE STABLE STACK STAFF STAGE STAIN STAIR STAKE STALE STAMP STAND STAR STARE START STATE STATION STATUE STAY STEADY STEAL STEAM STEEL STEEP STEER STEM STEP STERN STICK STIFF STILL STING STIR STOCK STONE STOOL STOP STORE STORM STORY STOVE STRAIN STRAND STRANGE STRAP STRAW STREAM STREET STRENGTH STRESS STRETCH STRICT STRIKE STRING STRIP STROKE STRONG STRUCK STRUCTURE STRUGGLE STUDENT STUDIO STUDY STUFF STYLE ' +
+    'TAIL TAKE TALE TALK TALL TAME TANK TAP TAPE TARGET TASK TASTE TAX TEA TEACH TEAM TEAR TONE TOOL TOP TOPIC TOTAL TOUCH TOUGH TOUR TOWEL TOWER TOWN TOY TRACE TRACK TRADE TRAIL TRAIN TRAIT TRAP TRAVEL TRAY TREAT TREE TRIAL TRIBE TRICK TRIED TRIM TRIP TROOP TROT TRUE TRUST TRUTH TRY TUBE TUCK TUNE TURN TWICE TWIN TYPE ' +
+    'ULTRA UNCLE UNDER UNION UNIT UNITE UNITY UNTIL UPON UPPER URBAN URGE USAGE USE USED USER USUAL UTILITY UTTER ' +
+    'VALLEY VALUE VAN VARY VAST VAULT VEIL VEIN VELVET VENT VERB VERSE VERY VESSEL VEST VIA VIEW VILLA VINE VIOLIN VIRTUE VIRUS VISIT VISUAL VITAL VIVID VOCAL VOICE VOID VOLT VOLUME VOTE VOWEL VOYAGE ' +
+    'WAIST WAIT WAKE WALK WALL WANDER WANT WAR WARM WARN WASH WASTE WATCH WATER WAVE WAX WAY WEAK WEALTH WEAPON WEAR WEATHER WEB WEDDING WEEK WEIGHT WELCOME WELL WEST WET WHALE WHAT WHEAT WHEEL WHEN WHERE WHICH WHILE WHIP WHISPER WHITE WHO WHOLE WHOM WHOSE WHY WIDE WIDOW WIDTH WIFE WILD WILL WIN WIND WINDOW WINE WING WINNER WINTER WIRE WISE WISH WIT WITH WITHIN WITHOUT WOLF WOMAN WONDER WOOD WOOL WORD WORK WORLD WORM WORRY WORSE WORST WORTH WOULD WOUND WRAP WRIST WRITE WRONG WROTE ' +
+    'YARD YARN YEAR YELLOW YES YET YIELD YOUNG YOUR YOUTH ZERO ZONE ZOO'
+  ).toUpperCase().split(/\s+/).filter((w) => w.length >= 3 && w.length <= 6 && /^[A-Z]+$/.test(w));
+
+  /**
+   * Set 2 Curriculum: On-Air CW (Q-Codes, Abbreviations & Callsigns), 15 lessons.
+   * Part A (Lessons 1–6, unlocked after Set 1 Lesson 15): Meaning, context, examples + interactive study quiz.
+   * Part B (Lessons 7–15, unlocked after Set 1 Lesson 30 + Part A Lesson 6): Ear-copying & QSO practice.
+   */
+  MT.QSO_LESSONS = [
+    {
+      id: 1, part: 'A', title: 'Station Basics & Greetings',
+      subtitle: 'How every Morse contact starts, turns over, and signs off.',
+      items: [
+        { code: 'CQ',  meaning: 'Calling any station', usage: 'Sent 2–3 times to invite anyone listening to answer.', example: 'CQ CQ DE W1AW K' },
+        { code: 'DE',  meaning: 'From / this is',      usage: 'Placed between the called station and your own callsign.', example: 'W1AW DE K5TR K' },
+        { code: 'K',   meaning: 'Over / go ahead',     usage: 'Sent at the end of a transmission inviting a reply.', example: 'RST 599 DE K5TR K' },
+        { code: 'TU',  meaning: 'Thank you',           usage: 'Polite shorthand used at the start or end of an exchange.', example: 'TU FER CALL UR RST 599' },
+        { code: '73',  meaning: 'Best regards',        usage: 'Traditional warm sign-off at the end of a contact.', example: 'TU ES 73 DE W1AW' }
+      ]
+    },
+    {
+      id: 2, part: 'A', title: 'Signal Reports & Station Info',
+      subtitle: 'Giving signal reports and introducing the operator.',
+      items: [
+        { code: 'RST', meaning: 'Readability, Strength, Tone (e.g. 599)', usage: '3-digit signal quality report: 1–5 readability, 1–9 strength, 1–9 tone.', example: 'UR RST 599 599' },
+        { code: 'UR',  meaning: 'Your / you are',      usage: 'Used before RST, signal notes, or operator comments.', example: 'UR SIGS SOLID HR' },
+        { code: 'OP',  meaning: 'Operator',            usage: 'Introduces the name of the person at the key.', example: 'OP HR SAM' },
+        { code: 'OM',  meaning: 'Old Man (fellow operator)', usage: 'Friendly term of address for a male radio operator (YL for female).', example: 'GM OM TU FER CALL' },
+        { code: 'ES',  meaning: 'And (&)',             usage: 'Connects clauses in nearly every CW sentence.', example: 'RST 579 ES QTH OHIO' }
+      ]
+    },
+    {
+      id: 3, part: 'A', title: 'Location, Gear & Weather',
+      subtitle: 'Sharing where you are transmitting from and your station setup.',
+      items: [
+        { code: 'QTH', meaning: 'My location is…',     usage: 'Gives city, state, or grid square (with ? asks "What is your location?").', example: 'QTH BOSTON MA' },
+        { code: 'ANT', meaning: 'Antenna',             usage: 'Describes your transmitting antenna (dipole, vertical, yagi).', example: 'ANT DIPOLE UP 30 FT' },
+        { code: 'PWR', meaning: 'Transmitter power',   usage: 'States output power in watts.', example: 'PWR 50W' },
+        { code: 'WX',  meaning: 'Weather',             usage: 'Shares local sky and temperature conditions.', example: 'WX CLEAR ES WARM' },
+        { code: 'HR',  meaning: 'Here',                usage: 'Refers to conditions or equipment at your station.', example: 'WX HR RAIN' }
+      ]
+    },
+    {
+      id: 4, part: 'A', title: 'Band Conditions (Q-Codes I)',
+      subtitle: 'Reporting interference, static, fading, and frequency use.',
+      items: [
+        { code: 'QRM', meaning: 'Man-made interference', usage: 'Nearby stations or local electrical noise crowding the frequency.', example: 'HVY QRM PSE AGN' },
+        { code: 'QRN', meaning: 'Atmospheric static / noise', usage: 'Thunderstorm crashes or natural band static.', example: 'QRN BAD TONIGHT' },
+        { code: 'QSB', meaning: 'Signal is fading up and down', usage: 'Ionospheric propagation causing signal strength to fluctuate.', example: 'UR RST 559 W/ QSB' },
+        { code: 'QSY', meaning: 'Change frequency',    usage: 'Moving up/down the band to avoid interference.', example: 'PSE QSY UP 1 KHZ' },
+        { code: 'QRL', meaning: 'Frequency is busy (QRL? = Is it busy?)', usage: 'Always send QRL? before calling CQ on a new frequency.', example: 'QRL? DE K5TR' }
+      ]
+    },
+    {
+      id: 5, part: 'A', title: 'Speed, Power & QSLs (Q-Codes II)',
+      subtitle: 'Adjusting sending speed, power levels, and confirming copy.',
+      items: [
+        { code: 'QRS', meaning: 'Send more slowly',    usage: 'Never hesitate to send QRS—good operators immediately slow down to match you!', example: 'PSE QRS 12 WPM' },
+        { code: 'QRQ', meaning: 'Send faster',         usage: 'Invites the other station to increase WPM.', example: 'QRQ 22 WPM OK' },
+        { code: 'QRP', meaning: 'Low power (≤ 5W CW)', usage: 'Operating with a low-power or portable transceiver.', example: 'RIG QRP 5W' },
+        { code: 'QRO', meaning: 'High power / increase power', usage: 'Running full station power when signals are weak.', example: 'QSB HVY GOING QRO' },
+        { code: 'QSL', meaning: 'I confirm receipt / QSL card', usage: 'Acknowledges solid copy of information or promises a confirmation card.', example: 'QSL UR 599 TU' }
+      ]
+    },
+    {
+      id: 6, part: 'A', title: 'Calling, Closing & Prosigns',
+      subtitle: 'Managing callers and cleanly wrapping up a QSO.',
+      items: [
+        { code: 'QRZ', meaning: 'Who is calling me?',  usage: 'Sent when you heard a station call you but missed part of their callsign.', example: 'QRZ? DE W1AW' },
+        { code: 'QRT', meaning: 'Closing down / leaving the air', usage: 'Announces that you are turning off the station.', example: 'MUST QRT NOW 73' },
+        { code: 'PSE', meaning: 'Please',              usage: 'Polite request before QRS, QSL, QSY, or AGN.', example: 'PSE QSL VIA BURO' },
+        { code: 'FB',  meaning: 'Fine business (excellent!)', usage: 'Classic CW exclamation meaning "great" or "well done".', example: 'FB ON UR NEW ANT' },
+        { code: 'SK',  meaning: 'End of contact (signing off)', usage: 'Final prosign sent when a two-way contact is completely finished.', example: '73 TU DE K5TR SK' }
+      ]
+    },
+    // Part B: Ear-copy & exchange practice lessons (Lessons 7–15, unlocked after Set 1 Lesson 30)
+    {
+      id: 7, part: 'B', title: 'Copy Core Q-Codes I',
+      subtitle: 'Copy location and band-condition Q-codes by ear.',
+      pool: ['QTH', 'QSL', 'QRM', 'QRN', 'QSB', 'QRL']
+    },
+    {
+      id: 8, part: 'B', title: 'Copy Core Q-Codes II',
+      subtitle: 'Copy speed, power, and operating Q-codes by ear.',
+      pool: ['QRS', 'QRQ', 'QRP', 'QRO', 'QRZ', 'QRT', 'QSY']
+    },
+    {
+      id: 9, part: 'B', title: 'Copy CW Abbreviations',
+      subtitle: 'Copy high-frequency on-air shorthand tokens.',
+      pool: ['TU', 'PSE', 'RST', 'UR', 'FB', 'OM', 'YL', 'ES', 'ANT', 'PWR', 'SK', 'CQ', 'DE', 'WX']
+    },
+    {
+      id: 10, part: 'B', title: 'Copy Signal Reports & Power',
+      subtitle: 'Copy 3-digit RST reports and wattage figures.',
+      pool: ['599', '589', '579', '559', '539', '449', '339', '5W', '50W', '100W', '73', '88']
+    },
+    {
+      id: 11, part: 'B', title: 'Copy US & Short Callsigns',
+      subtitle: 'Copy 1×2 and 1×3 amateur callsigns by ear.',
+      callsignStyle: 'us'
+    },
+    {
+      id: 12, part: 'B', title: 'Copy DX & International Callsigns',
+      subtitle: 'Copy 2×2 and 2×3 international prefixes and suffixes.',
+      callsignStyle: 'dx'
+    },
+    {
+      id: 13, part: 'B', title: 'Copy Portable & Stroke Callsigns (/)',
+      subtitle: 'Copy callsigns with /P, /QRP, or region portable indicators.',
+      callsignStyle: 'portable'
+    },
+    {
+      id: 14, part: 'B', title: 'Copy Contest Exchanges',
+      subtitle: 'Rapid-fire mixture of callsigns, RST reports, and QSLs.',
+      callsignStyle: 'contest'
+    },
+    {
+      id: 15, part: 'B', title: 'Full On-Air QSO Copy',
+      subtitle: 'Complete QSO vocabulary: Q-codes, callsigns, RSTs, and prosigns.',
+      callsignStyle: 'full'
+    }
+  ];
+
+  /** Synthesize a realistic amateur callsign using only characters present in `chars`. */
+  MT.pickCallsign = function (chars, style, rnd) {
+    rnd = rnd || Math.random;
+    const letters = chars.filter((c) => /[A-Z]/.test(c));
+    const digits = chars.filter((c) => /[0-9]/.test(c));
+    const hasSlash = chars.indexOf('/') >= 0;
+    const pick1 = (arr) => arr[Math.floor(rnd() * arr.length)] || 'K';
+    const usPrefixes = ['K', 'W', 'N', 'A'].filter((c) => letters.indexOf(c) >= 0);
+    const p1 = usPrefixes.length ? pick1(usPrefixes) : pick1(letters);
+    const d1 = digits.length ? pick1(digits) : '0';
+
+    if (style === 'dx') {
+      const p2 = pick1(letters);
+      const sLen = rnd() < 0.5 ? 2 : 3;
+      let suf = '';
+      for (let i = 0; i < sLen; i++) suf += pick1(letters);
+      return p1 + p2 + d1 + suf;
+    }
+    const sLen = rnd() < 0.45 ? 2 : 3;
+    let base = p1 + d1;
+    for (let i = 0; i < sLen; i++) base += pick1(letters);
+    if (style === 'portable' && hasSlash) {
+      const mods = ['P', 'M', 'QRP', d1].filter((m) => m.split('').every((c) => chars.indexOf(c) >= 0));
+      return base + '/' + (mods.length ? pick1(mods) : p1);
+    }
+    return base;
+  };
+
+  /**
+   * Pick a word or callsign built strictly from `chars` (unlocked characters).
+   * mode: 'words' | 'callsigns'
+   */
+  MT.pickWordOrCallsign = function (chars, mode, weightFn) {
+    const allowed = {};
+    chars.forEach((c) => { allowed[c] = true; });
+    const validWords = MT.WORDS.filter((w) => {
+      for (let i = 0; i < w.length; i++) if (!allowed[w[i]]) return false;
+      return true;
+    });
+    if (mode === 'callsigns' && (Math.random() < 0.4 || !validWords.length)) {
+      return MT.pickCallsign(chars, chars.indexOf('/') >= 0 && Math.random() < 0.3 ? 'portable' : 'us');
+    }
+    if (!validWords.length) {
+      return MT.pickCallsign(chars, 'us');
+    }
+    const weights = validWords.map((w) => {
+      if (!weightFn) return 1;
+      let sum = 0;
+      for (let i = 0; i < w.length; i++) sum += weightFn(w[i]);
+      return sum / w.length;
+    });
+    return MT.pickWeighted(validWords, weights);
+  };
+
+  /** All dictionary words that can be spelled using only characters in `chars`. */
+  MT.wordsForChars = function (chars) {
+    const allowed = {};
+    chars.forEach((c) => { allowed[c] = true; });
+    return MT.WORDS.filter((w) => {
+      for (let i = 0; i < w.length; i++) if (!allowed[w[i]]) return false;
+      return true;
+    });
+  };
+
+  /** Generate a deterministic sample of realistic callsigns formed with `chars`. */
+  MT.sampleCallsigns = function (chars, count) {
+    count = count || 6;
+    const list = [];
+    const rnds = [0.12, 0.45, 0.78, 0.23, 0.89, 0.61, 0.34, 0.95];
+    for (let i = 0; i < count; i++) {
+      let rIdx = 0;
+      const rnd = () => {
+        const val = rnds[(i + rIdx) % rnds.length];
+        rIdx++;
+        return val;
+      };
+      const style = i % 3 === 0 ? 'us' : (i % 3 === 1 ? 'dx' : (chars.indexOf('/') >= 0 ? 'portable' : 'us'));
+      const cs = MT.pickCallsign(chars, style, rnd);
+      if (list.indexOf(cs) < 0) list.push(cs);
+    }
+    return list;
+  };
+
+  /** ".-" -> "di-dah" style spoken form. */
+  MT.say = function (pattern) {
+    return pattern.split('').map((e, i, a) =>
+      e === '-' ? 'dah' : (i === a.length - 1 ? 'dit' : 'di')).join(' ');
+  };
+
+  /**
+   * Farnsworth timing. Characters are sent at charWpm; the gaps between
+   * characters / words are stretched so the overall speed is effWpm.
+   */
+  MT.timing = function (charWpm, effWpm) {
+    const c = charWpm;
+    const s = Math.min(effWpm, charWpm);
+    const unit = 1.2 / c;
+    const ta = (60 * c - 37.2 * s) / (19 * c * s);
+    return { unit: unit, charGap: 3 * ta, wordGap: 7 * ta };
+  };
+
+  /**
+   * Align expected vs typed text (edit distance). Returns columns:
+   * {exp, got, ok}. exp null = extra typed char, got null = missed char.
+   */
+  MT.align = function (expected, typed) {
+    const a = expected, b = typed, n = a.length, m = b.length;
+    const d = [];
+    for (let i = 0; i <= n; i++) { d.push(new Array(m + 1).fill(0)); d[i][0] = i; }
+    for (let j = 0; j <= m; j++) d[0][j] = j;
+    for (let i = 1; i <= n; i++) {
+      for (let j = 1; j <= m; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+      }
+    }
+    const out = [];
+    let i = n, j = m;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && d[i][j] === d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)) {
+        out.push({ exp: a[i - 1], got: b[j - 1], ok: a[i - 1] === b[j - 1] });
+        i--; j--;
+      } else if (i > 0 && d[i][j] === d[i - 1][j] + 1) {
+        out.push({ exp: a[i - 1], got: null, ok: false });
+        i--;
+      } else {
+        out.push({ exp: null, got: b[j - 1], ok: false });
+        j--;
+      }
+    }
+    return out.reverse();
+  };
+
+  /** Pick one index/item using weights. */
+  MT.pickWeighted = function (items, weights, rnd) {
+    rnd = rnd || Math.random;
+    let total = 0;
+    for (let i = 0; i < weights.length; i++) total += weights[i];
+    let r = rnd() * total;
+    for (let i = 0; i < items.length; i++) {
+      r -= weights[i];
+      if (r <= 0) return items[i];
+    }
+    return items[items.length - 1];
+  };
+
+  MT.sortChars = function (arr) {
+    const rank = (c) => (/[A-Z]/.test(c) ? 0 : /[0-9]/.test(c) ? 1 : 2);
+    return arr.slice().sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : 1));
+  };
+})(globalThis);
+
+/* ==================== store.js ==================== */
+/* Persistence: settings, Koch level, per-character stats (with spaced repetition), daily log. */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+  const KEY = 'morseTrainer.v1';
+  /** Leitner boxes -> days until a character is "due" again. */
+  const INTERVALS = [1, 2, 4, 7, 14, 30];
+
+  const defaults = () => ({
+    v: 1,
+    settings: {
+      charWpm: 20, effWpm: 10, freq: 600, volume: 0.7,
+      groupSize: 5, groupsPerRound: 10, goalMin: 5, threshold: 90,
+      arcadeHints: false, sendWpm: 12, sendHints: true,
+      inputMode: 'auto', keyOrder: 'koch', haptics: true,
+      practiceType: 'random'   // 'random' | 'words' | 'callsigns' (Words/Callsigns unlock after Lesson 20)
+    },
+    koch: { level: 2, introduced: 0, highestPassed: 0, last: null },
+    qso: { level: 1, highestPassed: 0, last: null },
+    arcade: { best: 0, bestCombo: 0, games: 0 },
+    send: { rounds: 0, bestAcc: 0 },
+    chars: {},   // 'K': {seen, correct, acc, box, due}
+    days: {}     // '2026-10-15': {sec, groups, done}
+  });
+
+  function merge(base, over) {
+    for (const k in over) {
+      if (over[k] && typeof over[k] === 'object' && !Array.isArray(over[k]) &&
+          base[k] && typeof base[k] === 'object') merge(base[k], over[k]);
+      else base[k] = over[k];
+    }
+    return base;
+  }
+
+  function dateKey(d) {
+    d = d || new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+  function addDays(key, n) {
+    const [y, m, d] = key.split('-').map(Number);
+    return dateKey(new Date(y, m - 1, d + n));
+  }
+
+  function load() {
+    try {
+      const raw = g.localStorage && g.localStorage.getItem(KEY);
+      if (raw) return merge(defaults(), JSON.parse(raw));
+    } catch (e) { /* ignore corrupt data */ }
+    return defaults();
+  }
+
+  const Store = {
+    data: load(),
+    dateKey: dateKey,
+    addDays: addDays,
+    get settings() { return this.data.settings; },
+
+    save() {
+      try { g.localStorage.setItem(KEY, JSON.stringify(this.data)); } catch (e) { /* private mode */ }
+    },
+    reset() { this.data = defaults(); this.save(); },
+    exportJson() { return JSON.stringify(this.data); },
+    importJson(text) {
+      const obj = JSON.parse(text);
+      if (!obj || typeof obj !== 'object' || !obj.settings) throw new Error('Not a backup');
+      this.data = merge(defaults(), obj);
+      this.save();
+    },
+
+    day(key) {
+      key = key || dateKey();
+      return this.data.days[key] || { sec: 0, groups: 0, done: false };
+    },
+    charStat(c) { return this.data.chars[c] || null; },
+    /** Recent accuracy 0..1, or null if never practised. */
+    acc(c) {
+      const s = this.data.chars[c];
+      return s && s.acc != null ? s.acc : null;
+    },
+    isDue(c) {
+      const s = this.data.chars[c];
+      return !s || !s.due || s.due <= dateKey();
+    },
+    totalSeconds() {
+      let t = 0;
+      for (const k in this.data.days) t += this.data.days[k].sec || 0;
+      return t;
+    },
+
+    /** Consecutive days (ending today, or yesterday) where the daily goal was met. */
+    streak() {
+      let key = dateKey();
+      if (!this.day(key).done) key = addDays(key, -1);
+      let n = 0;
+      while (this.day(key).done) { n++; key = addDays(key, -1); }
+      return n;
+    },
+
+    /** Highest Koch lesson completed (0..39). */
+    lessonsCompleted() {
+      const k = this.data.koch || {};
+      return Math.max(k.highestPassed || 0, (k.level || 2) - 2);
+    },
+    /** Whether Words / Callsigns practice mode is unlocked (requires Set 1 Lesson 20 completed). */
+    wordsUnlocked() {
+      return this.lessonsCompleted() >= 20;
+    },
+    /** Effective practice type: 'random' | 'words' | 'callsigns'. */
+    effectivePracticeType() {
+      if (!this.wordsUnlocked()) return 'random';
+      return this.settings.practiceType || 'random';
+    },
+    /** Array of unlocked Set 1 lesson milestone badges. */
+    earnedBadges() {
+      const done = this.lessonsCompleted();
+      return MT.BADGES.filter((b) => b.lesson <= done);
+    },
+    /** Next upcoming Set 1 lesson milestone badge, or null if all are earned. */
+    nextBadge() {
+      const done = this.lessonsCompleted();
+      return MT.BADGES.find((b) => b.lesson > done) || null;
+    },
+    /** Set 1 badge awarded for completing a specific lesson number (1, 5, 10, 15, ...), or null. */
+    badgeForLesson(lessonNum) {
+      return MT.BADGES.find((b) => b.lesson === lessonNum) || null;
+    },
+
+    /** Set 2 (Q-Codes & Callsigns) unlock gates and badge helpers. */
+    qsoPartAUnlocked() {
+      return this.lessonsCompleted() >= 15;
+    },
+    qsoPartBUnlocked() {
+      return this.lessonsCompleted() >= 30 && this.qsoLessonsCompleted() >= 6;
+    },
+    qsoLessonsCompleted() {
+      if (!this.qsoPartAUnlocked()) return 0;
+      const q = this.data.qso || {};
+      return Math.min(15, q.highestPassed || 0);
+    },
+    earnedQsoBadges() {
+      const done = this.qsoLessonsCompleted();
+      return MT.QSO_BADGES.filter((b) => b.lesson <= done);
+    },
+    nextQsoBadge() {
+      const done = this.qsoLessonsCompleted();
+      return MT.QSO_BADGES.find((b) => b.lesson > done) || null;
+    },
+    qsoBadgeForLesson(lessonNum) {
+      return MT.QSO_BADGES.find((b) => b.lesson === lessonNum) || null;
+    },
+
+    /**
+     * result: {chars:{c:{seen,correct}}, groups, activeSec}
+     * opts.srs: also move characters between Leitner boxes.
+     */
+    recordResult(result, opts) {
+      opts = opts || {};
+      const today = dateKey();
+      for (const c in result.chars) {
+        const r = result.chars[c];
+        const s = this.data.chars[c] || (this.data.chars[c] = { seen: 0, correct: 0, acc: null, box: 0, due: null });
+        s.seen += r.seen;
+        s.correct += r.correct;
+        const sessionAcc = r.correct / r.seen;
+        s.acc = s.acc == null ? sessionAcc : s.acc * 0.6 + sessionAcc * 0.4;
+        if (opts.srs && r.seen >= 2) {
+          if (sessionAcc >= 0.9) s.box = Math.min(5, s.box + 1);
+          else if (sessionAcc < 0.7) s.box = 0;
+          s.due = addDays(today, INTERVALS[s.box]);
+        }
+      }
+      const day = this.data.days[today] || (this.data.days[today] = { sec: 0, groups: 0, done: false });
+      day.sec += result.activeSec || 0;
+      day.groups += result.groups || 0;
+      let newlyDone = false;
+      if (!day.done && day.sec >= this.settings.goalMin * 60) { day.done = true; newlyDone = true; }
+      this.save();
+      return { newlyDone: newlyDone, doneToday: day.done, streak: this.streak() };
+    }
+  };
+
+  MT.Store = Store;
+})(globalThis);
+
+/* ==================== audio.js ==================== */
+/* Morse audio via Web Audio API (no audio files, works offline). */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+  let ctx = null;
+  let current = null;
+
+  function ensure() {
+    if (!ctx) {
+      const AC = g.AudioContext || g.webkitAudioContext;
+      ctx = new AC();
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  /** Convert text to tone events (seconds, relative to start). */
+  function build(text, s) {
+    const t = MT.timing(s.charWpm, s.effWpm);
+    const dot = t.unit;
+    const tones = [];
+    const chars = [];
+    let cur = 0;
+    let first = true;
+    text.toUpperCase().trim().split(/\s+/).forEach((word) => {
+      let firstInWord = true;
+      for (const ch of word) {
+        const p = MT.CODE[ch];
+        if (!p) continue;
+        if (!first) cur += firstInWord ? t.wordGap : t.charGap;
+        chars.push({ ch: ch, at: cur });
+        for (let k = 0; k < p.length; k++) {
+          const d = p[k] === '.' ? dot : 3 * dot;
+          tones.push({ at: cur, dur: d });
+          cur += d;
+          if (k < p.length - 1) cur += dot;
+        }
+        first = false;
+        firstInWord = false;
+      }
+    });
+    return { tones: tones, chars: chars, total: cur };
+  }
+
+  /**
+   * Play text as Morse. Returns {done: Promise, stop(), duration}.
+   * opts: {lead (seconds before first tone), settings (override), onChar(index, ch)}
+   */
+  function play(text, opts) {
+    opts = opts || {};
+    if (current) current.stop();
+    const s = Object.assign({}, MT.Store.settings, opts.settings || {});
+    const c = ensure();
+    const b = build(text, s);
+    const lead = opts.lead != null ? opts.lead : 0.15;
+    const t0 = c.currentTime + lead;
+    const peak = Math.max(0.02, s.volume) * 0.6;
+    const ramp = 0.006;
+
+    const osc = c.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = s.freq;
+    const gain = c.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain);
+    gain.connect(c.destination);
+    b.tones.forEach((tn) => {
+      const a = t0 + tn.at, e = a + tn.dur;
+      gain.gain.setValueAtTime(0, a);
+      gain.gain.linearRampToValueAtTime(peak, a + ramp);
+      gain.gain.setValueAtTime(peak, e - ramp);
+      gain.gain.linearRampToValueAtTime(0, e);
+    });
+
+    const timers = [];
+    if (opts.onChar) {
+      b.chars.forEach((ci, i) => timers.push(setTimeout(() => opts.onChar(i, ci.ch), (lead + ci.at) * 1000)));
+    }
+    if (s.haptics && canHaptic() && b.tones.length) {
+      const vpat = vibratePattern(b.tones);
+      timers.push(setTimeout(() => { try { g.navigator.vibrate(vpat); } catch (e) {} }, lead * 1000));
+    }
+
+    let resolve;
+    const done = new Promise((r) => { resolve = r; });
+    let stopped = false;
+    const handle = {
+      done: done,
+      duration: b.total,
+      stop() {
+        if (stopped) return;
+        stopped = true;
+        timers.forEach(clearTimeout);
+        if (canHaptic()) { try { g.navigator.vibrate(0); } catch (e) {} }
+        try { gain.gain.cancelScheduledValues(0); gain.gain.value = 0; osc.stop(); } catch (e) { /* already stopped */ }
+        if (current === handle) current = null;
+        resolve(false);
+      }
+    };
+    osc.onended = () => {
+      stopped = true;
+      timers.forEach(clearTimeout);
+      try { osc.disconnect(); gain.disconnect(); } catch (e) { /* noop */ }
+      if (current === handle) current = null;
+      resolve(true);
+    };
+    osc.start();
+    osc.stop(t0 + b.total + 0.1);
+    current = handle;
+    return handle;
+  }
+
+  /** Convert tone events [{at, dur}] (sec) to navigator.vibrate [onMs, offMs, onMs, ...] array. */
+  function vibratePattern(tones) {
+    const out = [];
+    for (let i = 0; i < tones.length; i++) {
+      if (i > 0) {
+        const gap = Math.max(0, Math.round((tones[i].at - (tones[i - 1].at + tones[i - 1].dur)) * 1000));
+        out.push(gap);
+      }
+      out.push(Math.max(10, Math.round(tones[i].dur * 1000)));
+    }
+    return out;
+  }
+
+  function canHaptic() {
+    return typeof g.navigator !== 'undefined' && typeof g.navigator.vibrate === 'function';
+  }
+
+  function tapHaptic(ms) {
+    if (MT.Store.settings.haptics && canHaptic()) {
+      try { g.navigator.vibrate(ms || 10); } catch (e) {}
+    }
+  }
+
+  let liveOsc = null, liveGain = null;
+
+  function toneStart() {
+    if (current) current.stop();
+    toneStop();
+    const s = MT.Store.settings;
+    if (s.haptics && canHaptic()) { try { g.navigator.vibrate(2000); } catch (e) {} }
+    const c = ensure();
+    const peak = Math.max(0.02, s.volume) * 0.6;
+    const osc = c.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = s.freq;
+    const gain = c.createGain();
+    const now = c.currentTime;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(peak, now + 0.006);
+    osc.connect(gain);
+    gain.connect(c.destination);
+    osc.start();
+    liveOsc = osc;
+    liveGain = gain;
+  }
+
+  function toneStop() {
+    if (canHaptic()) { try { g.navigator.vibrate(0); } catch (e) {} }
+    if (!liveOsc) return;
+    const osc = liveOsc, gain = liveGain;
+    liveOsc = null; liveGain = null;
+    try {
+      const c = ensure();
+      const now = c.currentTime;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.006);
+      osc.stop(now + 0.01);
+    } catch (e) { /* ignore */ }
+  }
+
+  MT.Audio = {
+    ensure: ensure,
+    play: play,
+    stop() { if (current) current.stop(); toneStop(); },
+    build: build,
+    toneStart: toneStart,
+    toneStop: toneStop,
+    vibratePattern: vibratePattern,
+    canHaptic: canHaptic,
+    tapHaptic: tapHaptic
+  };
+})(globalThis);
+
+/* ==================== ui.js ==================== */
+/* Small DOM helpers and reusable widgets. */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+
+  /** h('div', {class:'x', onclick:fn}, child, ...) */
+  function h(tag, props) {
+    const el = document.createElement(tag);
+    props = props || {};
+    let value;
+    for (const k in props) {
+      const v = props[k];
+      if (v == null || v === false) continue;
+      if (k === 'class') el.className = v;
+      else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), v);
+      else if (k === 'value') value = v;
+      else el.setAttribute(k, v);
+    }
+    if (value !== undefined) el.value = value;
+    const kids = Array.prototype.slice.call(arguments, 2);
+    (function add(list) {
+      list.forEach((c) => {
+        if (c == null || c === false) return;
+        if (Array.isArray(c)) add(c);
+        else el.append(c.nodeType ? c : document.createTextNode(String(c)));
+      });
+    })(kids);
+    return el;
+  }
+  MT.h = h;
+
+  const UI = {
+    fmtTime(sec) {
+      sec = Math.max(0, Math.round(sec));
+      return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+    },
+    fmtMinutes(sec) {
+      const m = Math.round(sec / 60);
+      return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min';
+    },
+
+    /** Visual dots and dashes for a character. */
+    pattern(ch) {
+      const p = MT.CODE[ch] || '';
+      return h('span', { class: 'pattern', 'aria-label': MT.say(p) },
+        p.split('').map((e) => h('i', { class: e === '.' ? 'dot' : 'dash' })));
+    },
+
+    /** Progress bar 0..1 */
+    bar(frac, cls) {
+      return h('div', { class: 'bar ' + (cls || '') },
+        h('div', { class: 'bar-fill', style: 'width:' + Math.round(Math.max(0, Math.min(1, frac)) * 100) + '%' }));
+    },
+
+    /** Circular percentage. */
+    ring(frac, label, sub) {
+      const pct = Math.round(frac * 100);
+      return h('div', { class: 'ring', style: '--p:' + pct },
+        h('div', { class: 'ring-in' }, h('b', {}, label != null ? label : pct + '%'), sub ? h('small', {}, sub) : null));
+    },
+
+    /** Last 7 days. */
+    weekStrip() {
+      const S = MT.Store;
+      const today = S.dateKey();
+      const goal = S.settings.goalMin * 60;
+      const cells = [];
+      for (let i = 6; i >= 0; i--) {
+        const key = S.addDays(today, -i);
+        const [y, m, d] = key.split('-').map(Number);
+        const dow = new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'narrow' });
+        const day = S.day(key);
+        const cls = day.done ? 'full' : day.sec > 0 ? 'part' : '';
+        cells.push(h('div', { class: 'wk ' + cls + (i === 0 ? ' today' : '') },
+          h('span', { class: 'wk-dot', title: UI.fmtMinutes(day.sec) + ' / ' + (goal / 60) + ' min' }), h('small', {}, dow)));
+      }
+      return h('div', { class: 'week' }, cells);
+    },
+
+    /** Compact lesson badge strip. set: 'koch' | 'qso' | undefined (both). */
+    badgeStrip(set) {
+      const S = MT.Store;
+      if (set === 'qso') {
+        const done = S.qsoLessonsCompleted();
+        const earned = S.earnedQsoBadges();
+        const next = S.nextQsoBadge();
+        const icons = h('div', { class: 'badge-icons' }, MT.QSO_BADGES.map((b) =>
+          h('span', {
+            class: b.lesson <= done ? 'earned' : 'locked',
+            title: b.title + ' (Set 2 Lesson ' + b.lesson + ')'
+          }, b.icon)));
+        const label = h('span', { class: 'muted' }, next
+          ? earned.length + '/' + MT.QSO_BADGES.length + ' Set 2 badges · Next: Lesson ' + next.lesson
+          : 'All ' + MT.QSO_BADGES.length + ' Set 2 badges earned!');
+        return h('div', { class: 'badge-strip' }, icons, label);
+      }
+      const done1 = S.lessonsCompleted();
+      const earned1 = S.earnedBadges();
+      const next1 = S.nextBadge();
+      const done2 = S.qsoLessonsCompleted();
+      const earned2 = S.earnedQsoBadges();
+      const showBoth = !set && (S.qsoPartAUnlocked() || earned2.length > 0);
+      const icons = h('div', { class: 'badge-icons' },
+        MT.BADGES.map((b) => h('span', {
+          class: b.lesson <= done1 ? 'earned' : 'locked',
+          title: b.title + ' (Lesson ' + b.lesson + ')'
+        }, b.icon)),
+        showBoth ? MT.QSO_BADGES.map((b) => h('span', {
+          class: b.lesson <= done2 ? 'earned' : 'locked',
+          title: b.title + ' (Set 2 Lesson ' + b.lesson + ')'
+        }, b.icon)) : null);
+      const totalEarned = earned1.length + (showBoth ? earned2.length : 0);
+      const totalPossible = MT.BADGES.length + (showBoth ? MT.QSO_BADGES.length : 0);
+      const label = h('span', { class: 'muted' }, next1
+        ? totalEarned + '/' + totalPossible + ' badges · Next: Lesson ' + next1.lesson
+        : (showBoth && S.nextQsoBadge()
+            ? totalEarned + '/' + totalPossible + ' badges · Next: Set 2 L' + S.nextQsoBadge().lesson
+            : 'All ' + totalPossible + ' lesson badges earned!'));
+      return h('div', { class: 'badge-strip' }, icons, label);
+    },
+
+    /** Full 2-column grid of milestone badges. set: 'koch' (default) | 'qso'. */
+    badgeShelf(set) {
+      const S = MT.Store;
+      const isQso = set === 'qso';
+      const list = isQso ? MT.QSO_BADGES : MT.BADGES;
+      const done = isQso ? S.qsoLessonsCompleted() : S.lessonsCompleted();
+      const attr = isQso ? 'data-qso-badge-lesson' : 'data-badge-lesson';
+      return h('div', { class: 'badge-grid' }, list.map((b) => {
+        const isEarned = b.lesson <= done;
+        const props = { class: 'badge-item ' + (isEarned ? 'earned' : 'locked') };
+        props[attr] = b.lesson;
+        return h('div', props,
+          h('span', { class: 'badge-ic' }, b.icon),
+          h('div', { class: 'badge-info' },
+            h('b', {}, b.title),
+            h('small', {}, (isQso ? 'Set 2 · Lesson ' : 'Lesson ') + b.lesson + (isEarned ? ' ✓' : ''))));
+      }));
+    },
+
+    /** Curriculum switcher between Lesson Set 1 (Koch) and Lesson Set 2 (Q-Codes & Callsigns). */
+    setSwitcher(activeSet) {
+      const S = MT.Store;
+      const pA = S.qsoPartAUnlocked();
+      return h('div', { class: 'seg', style: 'margin-bottom:12px' },
+        h('button', {
+          class: 'seg-btn' + (activeSet === 1 ? ' active' : ''),
+          onclick: () => { if (activeSet !== 1) MT.App.go('koch'); }
+        }, 'Set 1: Characters (L1–39)'),
+        h('button', {
+          class: 'seg-btn' + (activeSet === 2 ? ' active' : ''),
+          onclick: () => { if (activeSet !== 2) MT.App.go('qso'); }
+        }, (pA ? '📻 ' : '🔒 ') + 'Set 2: Q-Codes & Callsigns'));
+    },
+
+    /** Practice type selector ('random' | 'words' | 'callsigns'), locked until Set 1 Lesson 20. */
+    practiceTypeControl(onChange) {
+      const S = MT.Store;
+      const unlocked = S.wordsUnlocked();
+      const cur = S.effectivePracticeType();
+      const options = [
+        { id: 'random', label: 'Random groups' },
+        { id: 'words', label: (unlocked ? '' : '🔒 ') + 'Words' },
+        { id: 'callsigns', label: (unlocked ? '' : '🔒 ') + 'Words & Callsigns' }
+      ];
+      const desc = h('p', { class: 'muted small', style: 'margin-top:6px' },
+        !unlocked
+          ? '🔒 Words & Callsigns mode unlocks after completing Lesson 20 (' + S.lessonsCompleted() + '/20 completed).'
+          : cur === 'words'
+            ? 'Practises real English words built strictly from your unlocked characters.'
+            : cur === 'callsigns'
+              ? 'Mixes unlocked-character English words with realistic amateur radio callsigns.'
+              : 'Classic Koch random character groups (best for pure ear-reflex training).');
+      const btns = [];
+      const row = h('div', { class: 'seg three' }, options.map((opt) => {
+        const disabled = !unlocked && opt.id !== 'random';
+        const b = h('button', {
+          class: 'seg-btn' + (cur === opt.id ? ' active' : ''),
+          disabled: disabled ? 'disabled' : null,
+          'data-practice-type': opt.id,
+          onclick: () => {
+            if (disabled) return;
+            S.settings.practiceType = opt.id;
+            S.save();
+            btns.forEach((x) => x.el.classList.toggle('active', x.id === opt.id));
+            if (onChange) onChange(opt.id);
+          }
+        }, opt.label);
+        btns.push({ id: opt.id, el: b });
+        return b;
+      }));
+      return h('section', { class: 'card' },
+        h('b', {}, 'Practice content'),
+        row,
+        desc);
+    },
+
+    /** Weakest unlocked characters. */
+    weakList(limit) {
+      const S = MT.Store;
+      const unlocked = MT.KOCH.slice(0, S.data.koch.level);
+      const rows = unlocked
+        .filter((c) => S.acc(c) != null)
+        .sort((a, b) => S.acc(a) - S.acc(b))
+        .slice(0, limit || 6);
+      if (!rows.length) return h('p', { class: 'muted' }, 'Practise a bit and your weak spots will show up here.');
+      return h('div', { class: 'weak' }, rows.map((c) => {
+        const a = S.acc(c);
+        const cls = a >= 0.9 ? 'good' : a >= 0.7 ? 'ok' : 'bad';
+        return h('button', { class: 'weak-row', onclick: () => MT.Audio.play(c, { lead: 0.05 }), title: 'Tap to hear' },
+          h('span', { class: 'weak-ch' }, c), UI.pattern(c),
+          h('span', { class: 'weak-bar' }, UI.bar(a, cls)),
+          h('span', { class: 'weak-pct' }, Math.round(a * 100) + '%'));
+      }));
+    },
+
+    /** Little tappable chip that plays its character. */
+    charChip(c, cls) {
+      return h('button', { class: 'chip ' + (cls || ''), onclick: () => MT.Audio.play(c, { lead: 0.05 }) }, c);
+    },
+
+    /** Order characters according to keyOrder setting ('koch' = order learned, 'alpha' = A-Z). */
+    orderChars(chars) {
+      return MT.Store.settings.keyOrder === 'alpha' ? MT.sortChars(chars) : chars.slice();
+    },
+
+    /** Resolve effective input mode: 'cards' (#3), 'keys' (#1), 'ditdah' (#2), or 'tree' (#4). */
+    effectiveInputMode(chars, override) {
+      const m = override || MT.Store.settings.inputMode || 'auto';
+      if (m === 'auto') return chars.length <= 5 ? 'cards' : 'keys';
+      if (m === 'koch') return 'keys';
+      return m;
+    },
+
+    /**
+     * Build the mobile/on-screen input pad for Koch, Daily, and Arcade.
+     * opts: { chars, onChar(c), onBackspace?(), mode? }
+     */
+    buildInputPad(opts) {
+      const chars = opts.chars || [];
+      const newest = chars.length >= 2 ? chars[chars.length - 1] : null;
+      const ordered = UI.orderChars(chars);
+      const eff = UI.effectiveInputMode(chars, opts.mode);
+      const wrap = h('div', { class: 'kb-wrap', 'data-input-mode': eff });
+      let autoTimer = null;
+
+      const emit = (c) => {
+        MT.Audio.tapHaptic(10);
+        opts.onChar(c);
+      };
+      const back = () => {
+        MT.Audio.tapHaptic(8);
+        if (opts.onBackspace) opts.onBackspace();
+      };
+
+      if (eff === 'cards') {
+        // #3: Big multiple-choice cards for lessons 1-4 (2 to 5 characters)
+        const grid = h('div', { class: 'kb-cards' });
+        ordered.forEach((c, i) => {
+          const isOddLast = (ordered.length % 2 === 1) && (i === ordered.length - 1);
+          const cls = 'key' + (c === newest ? ' newest' : '') + (isOddLast ? ' odd-last' : '');
+          grid.append(h('button', { class: cls, onclick: () => emit(c) }, c));
+        });
+        if (opts.onBackspace) {
+          grid.append(h('button', { class: 'key back', onclick: back, 'aria-label': 'Backspace' }, '⌫ Backspace'));
+        }
+        wrap.append(grid);
+      } else if (eff === 'ditdah') {
+        // #2: Two-button Dit / Dah entry pad with live decode preview
+        let pat = '';
+        const patSpan = h('span', { class: 'pattern' });
+        const decSpan = h('span', { class: 'send-decoded' });
+        const pickBtn = h('button', { class: 'key', onclick: commitNow }, '✓ Pick');
+        const backBtn = h('button', {
+          class: 'key',
+          onclick: () => {
+            clearTimeout(autoTimer);
+            if (pat) { pat = pat.slice(0, -1); refreshDd(); }
+            else back();
+          },
+          'aria-label': 'Backspace'
+        }, '⌫');
+
+        function refreshDd() {
+          patSpan.innerHTML = '';
+          if (!pat) {
+            patSpan.append(h('span', { class: 'muted small' }, 'Tap · or − below'));
+          } else {
+            pat.split('').forEach((e) => patSpan.append(h('i', { class: e === '.' ? 'dot' : 'dash' })));
+          }
+          const dec = pat ? (MT.DECODE[pat] || '?') : '';
+          decSpan.textContent = dec ? '→ ' + dec : '';
+          decSpan.className = 'send-decoded' + (dec && dec !== '?' ? ' good' : dec === '?' ? ' bad' : '');
+          pickBtn.textContent = dec && dec !== '?' ? '✓ Pick ' + dec : '✓ Pick';
+          pickBtn.disabled = !dec || dec === '?';
+          pickBtn.classList.toggle('pick-ready', !!(dec && dec !== '?'));
+        }
+
+        function commitNow() {
+          clearTimeout(autoTimer);
+          const dec = MT.DECODE[pat];
+          pat = '';
+          refreshDd();
+          if (dec) emit(dec);
+        }
+
+        function tapSym(sym) {
+          MT.Audio.tapHaptic(sym === '.' ? 10 : 22);
+          clearTimeout(autoTimer);
+          if (pat.length < 6) pat += sym;
+          refreshDd();
+          const dec = MT.DECODE[pat];
+          if (dec) {
+            const hasLonger = chars.some((c) => MT.CODE[c] && MT.CODE[c].length > pat.length && MT.CODE[c].indexOf(pat) === 0);
+            autoTimer = setTimeout(commitNow, hasLonger ? 750 : 450);
+          }
+        }
+
+        refreshDd();
+        wrap.commitCurrent = commitNow;
+        wrap.append(
+          h('div', { class: 'kb-ditdah' },
+            h('div', { class: 'dd-bar' }, patSpan, decSpan),
+            h('div', { class: 'dd-btns' },
+              h('button', { class: 'dd-btn', 'data-dd': '.', onclick: () => tapSym('.') }, h('b', {}, '·'), h('small', {}, 'dit')),
+              h('button', { class: 'dd-btn', 'data-dd': '-', onclick: () => tapSym('-') }, h('b', {}, '−'), h('small', {}, 'dah'))),
+            h('div', { class: 'dd-actions' }, pickBtn, backBtn)));
+      } else if (eff === 'tree') {
+        // #4: Interactive Morse binary tree picker
+        let pat = '';
+        const leftBox = h('div', { class: 'tree-branch' });
+        const curBox = h('div', { class: 'tree-cur' });
+        const rightBox = h('div', { class: 'tree-branch' });
+        const pickBtn = h('button', { class: 'key tree-commit', onclick: pickNode }, '✓ Pick');
+
+        function refreshTree() {
+          const curCh = pat ? (MT.DECODE[pat] || '?') : '';
+          const leftCh = MT.DECODE[pat + '.'] || '–';
+          const rightCh = MT.DECODE[pat + '-'] || '–';
+          leftBox.className = 'tree-branch' + (chars.indexOf(leftCh) < 0 ? ' dim' : '');
+          rightBox.className = 'tree-branch' + (chars.indexOf(rightCh) < 0 ? ' dim' : '');
+          leftBox.innerHTML = '';
+          leftBox.append(h('small', {}, '↙ · dit'), h('b', {}, leftCh));
+          rightBox.innerHTML = '';
+          rightBox.append(h('small', {}, '− dah ↘'), h('b', {}, rightCh));
+          curBox.innerHTML = '';
+          curBox.append(
+            h('b', {}, curCh || 'Start'),
+            h('small', { class: 'muted' }, pat ? pat.replace(/\./g, '·').replace(/-/g, '−') : 'tap · or −'));
+          const valid = !!(curCh && curCh !== '?');
+          pickBtn.textContent = valid ? '✓ Pick ' + curCh : '✓ Pick';
+          pickBtn.disabled = !valid;
+          pickBtn.classList.toggle('pick-ready', valid);
+        }
+
+        function stepTree(sym) {
+          MT.Audio.tapHaptic(10);
+          if (pat.length < 6) pat += sym;
+          refreshTree();
+        }
+
+        function pickNode() {
+          const curCh = MT.DECODE[pat];
+          pat = '';
+          refreshTree();
+          if (curCh) emit(curCh);
+        }
+
+        refreshTree();
+        wrap.append(
+          h('div', { class: 'kb-tree' },
+            h('div', { class: 'tree-view' }, leftBox, curBox, rightBox),
+            h('div', { class: 'tree-btns' },
+              h('button', { class: 'key', 'data-tree': '.', onclick: () => stepTree('.') }, '↙ · dit'),
+              pickBtn,
+              h('button', { class: 'key', 'data-tree': '-', onclick: () => stepTree('-') }, '− dah ↘')),
+            h('div', { class: 'dd-actions' },
+              h('button', { class: 'key', onclick: () => { pat = pat.slice(0, -1); refreshTree(); } }, '↺ Step back'),
+              opts.onBackspace
+                ? h('button', { class: 'key', onclick: back, 'aria-label': 'Backspace' }, '⌫ Delete slot')
+                : h('button', { class: 'key', onclick: () => { pat = ''; refreshTree(); } }, '↺ Reset'))));
+      } else {
+        // #1: Key grid (Koch order learned by default, or alphabetical if toggled)
+        const grid = h('div', { class: 'kb kb-keys' + (ordered.length <= 12 ? ' compact' : '') });
+        ordered.forEach((c) => {
+          grid.append(h('button', { class: 'key' + (c === newest ? ' newest' : ''), onclick: () => emit(c) }, c));
+        });
+        if (opts.onBackspace) {
+          grid.append(h('button', { class: 'key wide', onclick: back, 'aria-label': 'Backspace' }, '⌫'));
+        }
+        wrap.append(grid);
+      }
+
+      wrap.cleanup = () => clearTimeout(autoTimer);
+      return wrap;
+    }
+  };
+
+  MT.UI = UI;
+})(globalThis);
+
+/* ==================== app.js ==================== */
+/* App shell: screen router, mode registry, bottom navigation, PWA bits. */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+  const h = MT.h;
+
+  const TABS = [
+    { id: 'home', icon: '🏠', label: 'Home' },
+    { id: 'chart', icon: '🔤', label: 'Chart' },
+    { id: 'stats', icon: '📊', label: 'Stats' },
+    { id: 'settings', icon: '⚙️', label: 'Settings' }
+  ];
+
+  const App = {
+    screens: {},
+    modes: [],
+    cleanup: null,
+    current: null,
+    installEvent: null,
+
+    /**
+     * Register a screen. fn(root, params) may return a cleanup function,
+     * or {redirect:[name, params]} to immediately go elsewhere.
+     * opts.nav=false hides the bottom nav (full-screen screens).
+     */
+    registerScreen(name, fn, opts) {
+      opts = opts || {};
+      this.screens[name] = { fn: fn, nav: opts.nav !== false, tab: opts.tab };
+    },
+
+    /**
+     * Register a game mode shown as a card on the home screen.
+     * {id, icon, title, tagline() -> string, screen: name, soon?: true}
+     * New modes (arcade, send...) only need to call this + registerScreen.
+     */
+    registerMode(mode) { this.modes.push(mode); },
+
+    go(name, params) {
+      const s = this.screens[name];
+      if (!s) throw new Error('Unknown screen: ' + name);
+      if (this.cleanup) {
+        try { this.cleanup(); } catch (e) { console.error(e); }
+        this.cleanup = null;
+      }
+      MT.Audio.stop();
+      this.current = name;
+      const root = document.getElementById('screen');
+      root.innerHTML = '';
+      root.scrollTop = 0;
+      root.className = 'screen screen-' + name;
+      document.body.classList.toggle('no-nav', !s.nav);
+      const r = s.fn(root, params || {});
+      if (r && r.redirect) return this.go(r.redirect[0], r.redirect[1]);
+      if (typeof r === 'function') this.cleanup = r;
+      this.markTab(s.tab || name);
+    },
+
+    markTab(id) {
+      document.querySelectorAll('#nav button').forEach((b) =>
+        b.classList.toggle('active', b.dataset.tab === id));
+    },
+
+    buildNav() {
+      const nav = document.getElementById('nav');
+      nav.innerHTML = '';
+      TABS.forEach((t) => nav.append(h('button', { 'data-tab': t.id, onclick: () => App.go(t.id) },
+        h('span', { class: 'nav-ic' }, t.icon), h('span', {}, t.label))));
+    },
+
+    setupPwa() {
+      try {
+        const makePng = (sz) => {
+          const c = document.createElement('canvas');
+          c.width = c.height = sz;
+          const g = c.getContext('2d');
+          if (!g) return '';
+          const s = sz / 512;
+          g.fillStyle = '#0b1220';
+          g.fillRect(0, 0, sz, sz);
+          g.fillStyle = '#131c2f';
+          g.fillRect(40 * s, 40 * s, 432 * s, 432 * s);
+          g.fillStyle = '#38bdf8';
+          const pill = (x, y, w, h) => {
+            const r = h / 2;
+            g.beginPath();
+            g.arc(x + r, y + r, r, Math.PI * 0.5, Math.PI * 1.5);
+            g.arc(x + w - r, y + r, r, Math.PI * 1.5, Math.PI * 0.5);
+            g.closePath();
+            g.fill();
+          };
+          pill(86 * s, 226 * s, 130 * s, 60 * s);
+          pill(240 * s, 226 * s, 130 * s, 60 * s);
+          g.beginPath();
+          g.arc(416 * s, 256 * s, 30 * s, 0, Math.PI * 2);
+          g.fill();
+          return c.toDataURL('image/png');
+        };
+        const ic192 = makePng(192);
+        const ic512 = makePng(512);
+        if (ic192) {
+          let touch = document.querySelector('link[rel="apple-touch-icon"]');
+          if (!touch) {
+            touch = h('link', { rel: 'apple-touch-icon' });
+            document.head.append(touch);
+          }
+          touch.href = ic192;
+        }
+        if (/^https?:$/.test(location.protocol) && ic192 && ic512) {
+          const base = location.href.split('#')[0].split('?')[0];
+          const scope = base.slice(0, base.lastIndexOf('/') + 1);
+          const manifest = {
+            name: 'Morse Trainer',
+            short_name: 'Morse',
+            description: 'Learn Morse code by ear with the Koch method. Works offline.',
+            start_url: base,
+            scope: scope,
+            display: 'standalone',
+            orientation: 'portrait',
+            background_color: '#0b1220',
+            theme_color: '#0b1220',
+            icons: [
+              { src: ic192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+              { src: ic512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+            ]
+          };
+          let mLink = document.querySelector('link[rel="manifest"]');
+          if (!mLink) {
+            mLink = h('link', { rel: 'manifest' });
+            document.head.append(mLink);
+          }
+          mLink.href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
+        }
+      } catch (e) { /* ignore canvas/manifest errors */ }
+    },
+
+    start() {
+      this.setupPwa();
+      this.buildNav();
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        App.installEvent = e;
+        if (App.current === 'home') App.go('home');
+      });
+      window.addEventListener('appinstalled', () => { App.installEvent = null; });
+      if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+      this.go('home');
+    }
+  };
+
+  MT.App = App;
+})(globalThis);
+
+/* ==================== trainer.js ==================== */
+/* Shared "listen and type" engine used by Koch (A), Set 2 Copy (B), and Daily (E). */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+  const h = MT.h;
+
+  /**
+   * cfg: {
+   *   title, intro?, chars: [allowed on-screen keys], groupSize?,
+   *   groups?: number            // end after N groups, or
+   *   timeLimitSec?: number      // end after the group in which time runs out
+   *   pickGroup(size) -> string,
+   *   onFinish(result, completed), onQuit()
+   * }
+   * result: {chars:{c:{seen,correct}}, confusions, groups, activeSec, correct, total, accuracy}
+   */
+  function mount(root, cfg) {
+    const size = cfg.groupSize || MT.Store.settings.groupSize;
+    let state = 'ready';            // ready | answering | feedback | done
+    let expected = '', typed = '';
+    let activeSec = 0, groupsDone = 0, correct = 0, total = 0;
+    let handle = null, finished = false, lastCols = [];
+    let slotsBox = null, listenBox = null;
+    const stats = {}, confusions = {};
+
+    const btn = (label, cls, fn) => h('button', { class: 'btn ' + cls, onclick: fn }, label);
+    const meter = h('div', { class: 'p-meter' });
+    const barFill = h('div', { class: 'bar-fill' });
+    const stage = h('div', { class: 'p-stage' });
+    const actions = h('div', { class: 'p-actions' });
+    const kb = MT.UI.buildInputPad({ chars: cfg.chars, onChar: typeChar, onBackspace: backspace });
+    kb.classList.add('hidden');
+    const box = h('div', { class: 'practice' },
+      h('div', { class: 'p-top' },
+        btn('✕ Quit', 'ghost small', () => finish(false)),
+        h('div', { class: 'p-title' }, cfg.title), meter),
+      h('div', { class: 'bar' }, barFill), stage, actions, kb);
+    // Keep focus away from buttons so Enter/Space never double-fire.
+    box.addEventListener('mousedown', (e) => { if (e.target.closest('button')) e.preventDefault(); });
+    root.append(box);
+
+    const isLast = () =>
+      (cfg.groups && groupsDone >= cfg.groups) || (cfg.timeLimitSec && activeSec >= cfg.timeLimitSec);
+
+    function updateMeter() {
+      if (cfg.groups) {
+        const n = Math.min(cfg.groups, state === 'feedback' ? groupsDone : groupsDone + 1);
+        meter.textContent = 'Group ' + n + '/' + cfg.groups;
+        barFill.style.width = Math.round(100 * groupsDone / cfg.groups) + '%';
+      } else {
+        meter.textContent = MT.UI.fmtTime(Math.max(0, cfg.timeLimitSec - activeSec)) + ' left';
+        barFill.style.width = Math.min(100, Math.round(100 * activeSec / cfg.timeLimitSec)) + '%';
+      }
+    }
+
+    function setPlaying(on) { if (listenBox) listenBox.classList.toggle('playing', on); }
+
+    function playExpected(lead) {
+      if (handle) handle.stop();
+      setPlaying(true);
+      const hd = (handle = MT.Audio.play(expected, { lead: lead }));
+      hd.done.then(() => { if (handle === hd) setPlaying(false); });
+    }
+
+    function updateSlots() {
+      if (!slotsBox) return;
+      slotsBox.innerHTML = '';
+      const curLen = expected ? expected.length : size;
+      for (let i = 0; i < curLen; i++) {
+        slotsBox.append(h('div', { class: 'slot' + (i === typed.length ? ' active' : '') + (typed[i] ? ' filled' : '') }, typed[i] || ''));
+      }
+    }
+
+    function render() {
+      stage.innerHTML = '';
+      actions.innerHTML = '';
+      slotsBox = null; listenBox = null;
+      kb.classList.toggle('hidden', state !== 'answering');
+
+      if (state === 'ready') {
+        stage.append(h('div', { class: 'ready' },
+          h('div', { class: 'big-icon' }, '📡'),
+          h('p', {}, cfg.intro || 'Listen to ' + size + ' characters, then type what you heard.'),
+          h('div', { class: 'chips' }, MT.UI.orderChars(cfg.chars).map((c) => MT.UI.charChip(c))),
+          h('p', { class: 'muted small' }, 'Tip: you can tap the characters above to hear them. Physical keyboard works too (Space = replay, Enter = submit).')));
+        actions.append(btn('▶ Start', 'primary', start));
+      } else if (state === 'answering') {
+        listenBox = h('div', { class: 'listen' }, [0, 1, 2, 3, 4, 5, 6].map((i) => h('i', { style: '--i:' + i })));
+        slotsBox = h('div', { class: 'slots' });
+        stage.append(listenBox, h('p', { class: 'muted center' }, 'What did you hear?'), slotsBox);
+        updateSlots();
+        actions.append(btn('🔊 Replay', '', () => playExpected(0.05)), btn('Submit ✓', 'primary', submit));
+      } else if (state === 'feedback') {
+        const ok = lastCols.filter((c) => c.ok).length;
+        const wrong = [];
+        lastCols.forEach((c) => { if (c.exp && !c.ok && wrong.indexOf(c.exp) < 0) wrong.push(c.exp); });
+        stage.append(
+          h('div', { class: 'fb-score ' + (ok === expected.length ? 'good' : '') },
+            ok === expected.length ? '✓ Perfect!' : ok + ' / ' + expected.length + ' correct'),
+          h('div', { class: 'fb-grid' }, lastCols.map((c) =>
+            h('div', { class: 'fb-col ' + (c.ok ? 'ok' : 'bad') },
+              h('div', { class: 'fb-exp' }, c.exp || '+'),
+              h('div', { class: 'fb-got' }, c.ok ? '✓' : (c.got || '–'))))),
+          wrong.length ? h('div', { class: 'fb-missed' },
+            h('p', { class: 'muted small' }, 'Missed — tap to hear:'),
+            wrong.map((c) => h('button', { class: 'missed', onclick: () => MT.Audio.play(c, { lead: 0.05 }) },
+              h('b', {}, c), MT.UI.pattern(c)))) : []);
+        actions.append(btn('🔊 Hear again', '', () => playExpected(0.05)),
+          btn(isLast() ? 'Finish ▶' : 'Next ▶', 'primary', next));
+      }
+      updateMeter();
+    }
+
+    function start() {
+      MT.Audio.ensure();
+      nextGroup();
+    }
+
+    function nextGroup() {
+      expected = cfg.pickGroup(size);
+      typed = '';
+      state = 'answering';
+      render();
+      playExpected(0.45);
+    }
+
+    function typeChar(c) {
+      const curLen = expected ? expected.length : size;
+      if (state !== 'answering' || typed.length >= curLen) return;
+      typed += c;
+      updateSlots();
+    }
+    function backspace() {
+      if (state !== 'answering') return;
+      typed = typed.slice(0, -1);
+      updateSlots();
+    }
+
+    function submit() {
+      if (state !== 'answering') return;
+      if (handle) handle.stop();
+      const cols = MT.align(expected, typed);
+      cols.forEach((c) => {
+        if (c.exp == null) return;
+        const s = stats[c.exp] || (stats[c.exp] = { seen: 0, correct: 0 });
+        s.seen++; total++;
+        if (c.ok) { s.correct++; correct++; }
+        else if (c.got != null) {
+          const k = c.exp + '>' + c.got;
+          confusions[k] = (confusions[k] || 0) + 1;
+        }
+      });
+      groupsDone++;
+      lastCols = cols;
+      state = 'feedback';
+      render();
+    }
+
+    function next() {
+      if (state !== 'feedback') return;
+      if (isLast()) finish(true); else nextGroup();
+    }
+
+    function replay() { if (state === 'answering' || state === 'feedback') playExpected(0.05); }
+
+    function finish(completed) {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      state = 'done';
+      if (groupsDone === 0) { cfg.onQuit && cfg.onQuit(); return; }
+      cfg.onFinish({
+        chars: stats, confusions: confusions, groups: groupsDone, activeSec: activeSec,
+        correct: correct, total: total, accuracy: total ? correct / total : 0
+      }, completed);
+    }
+
+    function onKey(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      const k = e.key;
+      if (state === 'ready') {
+        if (k === 'Enter') { e.preventDefault(); start(); }
+      } else if (state === 'answering') {
+        if (k === 'Enter') { e.preventDefault(); submit(); }
+        else if (k === 'Backspace') { e.preventDefault(); backspace(); }
+        else if (k === ' ') { e.preventDefault(); replay(); }
+        else if (k.length === 1 && MT.CODE[k.toUpperCase()]) { e.preventDefault(); typeChar(k.toUpperCase()); }
+      } else if (state === 'feedback') {
+        if (k === 'Enter') { e.preventDefault(); next(); }
+        else if (k === ' ') { e.preventDefault(); replay(); }
+      }
+    }
+
+    const ticker = setInterval(() => {
+      if ((state === 'answering' || state === 'feedback') && document.visibilityState === 'visible') {
+        activeSec++;
+        updateMeter();
+      }
+    }, 1000);
+    document.addEventListener('keydown', onKey);
+
+    function cleanup() {
+      clearInterval(ticker);
+      document.removeEventListener('keydown', onKey);
+      if (handle) handle.stop();
+      if (kb.cleanup) kb.cleanup();
+    }
+
+    render();
+    return cleanup;
+  }
+
+  MT.CopyPractice = { mount: mount };
+  MT.App.registerScreen('practice', (root, cfg) => mount(root, cfg), { nav: false });
+})(globalThis);
+
+/* ==================== screens.js ==================== */
+/* Generic screens: home, learn (character intro), result, chart, stats, settings. */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+  const h = MT.h, UI = MT.UI, App = MT.App, S = MT.Store;
+
+  /* ---------------------------------------------------------------- Home */
+  App.registerScreen('home', (root) => {
+    const today = S.day();
+    const goal = S.settings.goalMin * 60;
+    const streak = S.streak();
+    const earned = S.earnedBadges();
+    const earnedQso = S.earnedQsoBadges();
+    const allEarned = earned.concat(earnedQso);
+    const totalBadges = MT.BADGES.length + MT.QSO_BADGES.length;
+    const latestBadge = allEarned.length ? allEarned[allEarned.length - 1] : null;
+
+    root.append(
+      h('header', { class: 'top' },
+        h('div', {}, h('h1', {}, 'Morse Trainer'), h('p', { class: 'muted' }, 'Learn by ear, one letter at a time')),
+        h('div', { class: 'top-pills' },
+          h('div', { class: 'badge', title: 'Lesson badges earned' }, (latestBadge ? latestBadge.icon : '🏅') + ' ' + allEarned.length + '/' + totalBadges),
+          h('div', { class: 'badge', title: 'Day streak' }, '🔥 ' + streak))),
+      h('section', { class: 'card today' },
+        h('div', { class: 'row between' },
+          h('b', {}, 'Today'),
+          h('span', { class: 'muted' }, UI.fmtTime(Math.min(today.sec, goal)) + ' / ' + UI.fmtTime(goal))),
+        UI.bar(today.sec / goal, today.done ? 'good' : ''),
+        today.done ? h('p', { class: 'small good-text' }, '✓ Daily goal reached — nice work!')
+                   : h('p', { class: 'small muted' }, 'Practise ' + S.settings.goalMin + ' minutes a day to build your streak.'),
+        UI.badgeStrip()),
+      h('div', { class: 'modes' }, App.modes.map((m) =>
+        h('button', {
+          class: 'card mode' + (m.soon ? ' soon' : ''),
+          disabled: m.soon ? 'disabled' : null,
+          onclick: () => { MT.Audio.ensure(); App.go(m.screen); }
+        },
+          h('span', { class: 'mode-ic' }, m.icon),
+          h('span', { class: 'mode-tx' }, h('b', {}, m.title), h('small', {}, m.soon ? 'Coming soon' : m.tagline())),
+          m.soon ? null : h('span', { class: 'chev' }, '›')))));
+    const extras = [
+      App.installEvent ? h('button', {
+        class: 'btn ghost install',
+        onclick: () => { App.installEvent.prompt(); App.installEvent = null; App.go('home'); }
+      }, '📲 Install app (works offline)') : null,
+      /iPhone|iPad|iPod/.test(navigator.userAgent) && !navigator.standalone
+        ? h('p', { class: 'muted small center' }, 'On iPhone: tap Share → “Add to Home Screen” to install and use offline.') : null
+    ].filter(Boolean);
+    root.append(...extras);
+  });
+
+
+  /* ------------------------------------------------------------- Learn */
+  /** params: {chars:[...], onDone(), onBack()} - introduces new characters one by one. */
+  App.registerScreen('learn', (root, p) => {
+    let i = 0;
+    let timer = null;
+    function show() {
+      const c = p.chars[i];
+      root.innerHTML = '';
+      const pat = MT.CODE[c];
+      const rep = () => {
+        if (timer) clearTimeout(timer);
+        const hd = MT.Audio.play(c + ' ' + c + ' ' + c, { lead: 0.1, settings: { effWpm: 6 } });
+        return hd;
+      };
+      root.append(h('div', { class: 'learn' },
+        h('p', { class: 'muted center' }, 'New character ' + (i + 1) + ' of ' + p.chars.length),
+        h('div', { class: 'learn-ch' }, c),
+        h('div', { class: 'learn-pat' }, UI.pattern(c)),
+        h('p', { class: 'learn-say' }, MT.say(pat)),
+        h('p', { class: 'muted center small' },
+          'Don’t memorise the dots and dashes — learn what it sounds like. Listen a few times, then move on.'),
+        h('div', { class: 'stack' },
+          h('button', { class: 'btn primary big', onclick: rep }, '🔊 Hear it'),
+          h('button', { class: 'btn', onclick: () => { if (i + 1 < p.chars.length) { i++; show(); } else p.onDone(); } },
+            i + 1 < p.chars.length ? 'Next character ›' : 'Got it — start practising ›'),
+          h('button', { class: 'btn ghost small', onclick: () => (p.onBack ? p.onBack() : App.go('home')) }, 'Skip'))));
+      timer = setTimeout(rep, 350);
+    }
+    show();
+    return () => { if (timer) clearTimeout(timer); };
+  }, { nav: false });
+
+  /* ------------------------------------------------------------ Result */
+  /**
+   * params: {title, result, message?, good?, tiles?:[{v, l}], actions:[{label, primary?, fn}]}
+   */
+  App.registerScreen('result', (root, p) => {
+    const r = p.result;
+    const missed = Object.keys(r.chars).filter((c) => r.chars[c].correct < r.chars[c].seen)
+      .sort((a, b) => (r.chars[a].correct / r.chars[a].seen) - (r.chars[b].correct / r.chars[b].seen));
+    const conf = Object.keys(r.confusions).sort((a, b) => r.confusions[b] - r.confusions[a]).slice(0, 4);
+
+    root.append(h('div', { class: 'result' },
+      h('h2', { class: 'center' }, p.title),
+      h('div', { class: 'center' }, UI.ring(r.accuracy, Math.round(r.accuracy * 100) + '%', 'accuracy')),
+      p.message ? h('div', { class: 'card msg ' + (p.good ? 'good' : '') }, p.message) : null,
+      h('div', { class: 'tiles' }, (p.tiles || [
+        { v: r.groups, l: 'groups' },
+        { v: r.correct + '/' + r.total, l: 'characters' },
+        { v: UI.fmtTime(r.activeSec), l: 'time' }
+      ]).map((tl) => h('div', { class: 'tile' }, h('b', {}, tl.v), h('small', {}, tl.l)))),
+      missed.length ? h('section', { class: 'card' },
+        h('b', {}, 'Needs work'),
+        h('div', { class: 'missed-list' }, missed.slice(0, 8).map((c) =>
+          h('button', { class: 'missed', onclick: () => MT.Audio.play(c, { lead: 0.05 }) },
+            h('b', {}, c), UI.pattern(c), h('small', {}, r.chars[c].correct + '/' + r.chars[c].seen)))),
+        conf.length ? h('p', { class: 'muted small' }, 'Mix-ups: ' + conf.map((k) => k.replace('>', ' heard as ') + ' ×' + r.confusions[k]).join(' · ')) : null) : null,
+      h('div', { class: 'stack' }, p.actions.map((a) =>
+        h('button', { class: 'btn ' + (a.primary ? 'primary' : ''), onclick: a.fn }, a.label)))));
+  }, { nav: false });
+
+  /* ------------------------------------------------------------- Chart */
+  App.registerScreen('chart', (root) => {
+    const level = S.data.koch.level;
+    const unlocked = MT.KOCH.slice(0, level);
+    const section = (title, chars) => h('section', { class: 'card' }, h('b', {}, title),
+      h('div', { class: 'chart' }, chars.map((c) =>
+        h('button', { class: 'chart-cell' + (unlocked.indexOf(c) < 0 ? ' locked' : ''), onclick: () => MT.Audio.play(c, { lead: 0.05 }) },
+          h('span', { class: 'chart-ch' }, c), UI.pattern(c)))));
+    const all = Object.keys(MT.CODE);
+    root.append(
+      h('header', { class: 'top' }, h('div', {}, h('h1', {}, 'Chart'), h('p', { class: 'muted' }, 'Tap any character to hear it. Dimmed ones are not unlocked yet.'))),
+      section('Letters', all.filter((c) => /[A-Z]/.test(c))),
+      section('Numbers', all.filter((c) => /[0-9]/.test(c))),
+      section('Punctuation', all.filter((c) => /[^A-Z0-9]/.test(c))));
+  });
+
+  /* ------------------------------------------------------------- Stats */
+  App.registerScreen('stats', (root) => {
+    let seen = 0, ok = 0;
+    for (const c in S.data.chars) { seen += S.data.chars[c].seen; ok += S.data.chars[c].correct; }
+    const level = S.data.koch.level;
+    const earned = S.earnedBadges();
+    const earnedQso = S.earnedQsoBadges();
+    const heat = MT.KOCH.map((c, idx) => {
+      const a = S.acc(c);
+      const style = a != null && idx < level ? 'background:hsl(' + Math.round(a * 120) + ',65%,32%)' : '';
+      return h('button', { class: 'heat' + (idx >= level ? ' locked' : ''), style: style, onclick: () => MT.Audio.play(c, { lead: 0.05 }) }, c);
+    });
+
+    const unlockedChars = MT.KOCH.slice(0, level);
+    const learnedWords = MT.wordsForChars(unlockedChars);
+    const sampleCs = MT.sampleCallsigns(unlockedChars, 6);
+
+    const doneKoch = S.lessonsCompleted();
+    const doneQso = S.qsoLessonsCompleted();
+
+    // Set 2 Q-codes / abbreviations learned
+    const learnedQsoItems = [];
+    if (doneQso > 0) {
+      for (let i = 0; i < doneQso; i++) {
+        const l = MT.QSO_LESSONS[i];
+        if (l.items) {
+          l.items.forEach((it) => {
+            if (!learnedQsoItems.some((x) => x.code === it.code)) learnedQsoItems.push(it);
+          });
+        } else if (l.pool) {
+          l.pool.forEach((p) => {
+            if (!learnedQsoItems.some((x) => x.code === p)) learnedQsoItems.push({ code: p, meaning: 'On-air copy token' });
+          });
+        }
+      }
+    }
+
+    // Set 1 lessons list (completed + upcoming)
+    const kochLessons = [];
+    for (let i = 1; i <= 39; i++) {
+      const isDone = i <= doneKoch;
+      const isNext = i === doneKoch + 1;
+      const chars = i === 1 ? [MT.KOCH[0], MT.KOCH[1]] : [MT.KOCH[i]];
+      kochLessons.push({
+        num: i,
+        title: i === 1 ? 'Lesson 1: ' + MT.KOCH[0] + ', ' + MT.KOCH[1] : 'Lesson ' + i + ': ' + MT.KOCH[i],
+        chars: chars,
+        isDone: isDone,
+        isNext: isNext
+      });
+    }
+
+    // Set 2 lessons list (completed + upcoming)
+    const qsoLessons = MT.QSO_LESSONS.map((l) => {
+      const isDone = l.id <= doneQso;
+      const isPartA = l.part === 'A';
+      const isUnlockedSet = isPartA ? S.qsoPartAUnlocked() : S.qsoPartBUnlocked();
+      const isNext = isUnlockedSet && l.id === doneQso + 1;
+      const sub = l.items ? l.items.map((it) => it.code).join(' · ') : (l.pool ? l.pool.slice(0, 5).join(' · ') : l.subtitle);
+      return {
+        id: l.id,
+        num: l.id,
+        title: 'Lesson ' + l.id + ': ' + l.title,
+        sub: sub,
+        isDone: isDone,
+        isNext: isNext,
+        isUnlockedSet: isUnlockedSet,
+        sample: l.items ? l.items[0].code : (l.pool ? l.pool[0] : 'W1AW')
+      };
+    });
+
+    root.append(
+      h('header', { class: 'top' }, h('div', {}, h('h1', {}, 'Progress'))),
+      h('div', { class: 'tiles four' },
+        h('div', { class: 'tile' }, h('b', {}, '🔥 ' + S.streak()), h('small', {}, 'day streak')),
+        h('div', { class: 'tile' }, h('b', {}, UI.fmtMinutes(S.totalSeconds())), h('small', {}, 'practised')),
+        h('div', { class: 'tile' }, h('b', {}, level + '/' + MT.KOCH.length), h('small', {}, 'characters')),
+        h('div', { class: 'tile' }, h('b', {}, seen ? Math.round(100 * ok / seen) + '%' : '–'), h('small', {}, 'accuracy'))),
+      h('section', { class: 'card' }, h('b', {}, 'This week'), UI.weekStrip()),
+      h('section', { class: 'card' },
+        h('div', { class: 'row between' },
+          h('b', {}, 'Lesson badges (Set 1)'),
+          h('span', { class: 'muted small' }, earned.length + ' / ' + MT.BADGES.length + ' earned')),
+        UI.badgeShelf('koch'),
+        h('p', { class: 'muted small' }, 'Awarded after completing the 1st, 5th, and every 5th Koch lesson after that.')),
+      h('section', { class: 'card' },
+        h('div', { class: 'row between' },
+          h('b', {}, 'On-Air badges (Set 2)'),
+          h('span', { class: 'muted small' }, earnedQso.length + ' / ' + MT.QSO_BADGES.length + ' earned')),
+        UI.badgeShelf('qso'),
+        h('p', { class: 'muted small' }, 'Awarded after completing Set 2 lessons 1, 3, 6, 9, 12, and 15 (Q-Codes & Callsigns).')),
+      h('section', { class: 'card' }, h('b', {}, 'Weakest characters'), UI.weakList(8)),
+      h('section', { class: 'card' }, h('b', {}, 'Character accuracy'),
+        h('div', { class: 'heatmap' }, heat),
+        h('p', { class: 'muted small' }, 'Green = solid, red = needs work, grey = not unlocked / not practised yet.')),
+      h('section', { class: 'card' },
+        h('div', { class: 'row between' },
+          h('b', {}, 'Words & callsigns learned'),
+          h('span', { class: 'muted small' }, learnedWords.length + ' words · ' + sampleCs.length + ' callsigns')),
+        S.wordsUnlocked()
+          ? h('p', { class: 'small good-text' }, '✓ Words & callsigns practice mode unlocked (Set 1 Lesson 20+). All words below are composed strictly of your ' + level + ' unlocked characters.')
+          : h('p', { class: 'small muted' }, 'Words / Callsigns practice mode unlocks at Set 1, Lesson 20 (' + doneKoch + '/20). You have already learned ' + learnedWords.length + ' real words with your current ' + level + ' characters!'),
+        h('div', { style: 'margin-top:10px' },
+          h('div', { class: 'row between' },
+            h('span', { class: 'small muted' }, 'Sample callsigns you can copy/send (tap to hear):'),
+            h('span', { class: 'small muted' }, sampleCs.length + ' samples')),
+          h('div', { class: 'chips', style: 'margin: 6px 0 10px; justify-content: flex-start;' },
+            sampleCs.map((cs) => h('button', {
+              class: 'chip on',
+              onclick: () => { MT.Audio.ensure(); MT.Audio.play(cs, { lead: 0.05 }); }
+            }, cs)))),
+        learnedQsoItems.length ? h('div', { style: 'margin-top:4px' },
+          h('div', { class: 'row between' },
+            h('span', { class: 'small muted' }, 'Q-Codes & Abbreviations mastered in Set 2:'),
+            h('span', { class: 'small muted' }, learnedQsoItems.length + ' codes')),
+          h('div', { class: 'chips', style: 'margin: 6px 0 10px; justify-content: flex-start;' },
+            learnedQsoItems.map((it) => h('button', {
+              class: 'chip on',
+              title: it.meaning || '',
+              onclick: () => { MT.Audio.ensure(); MT.Audio.play(it.code, { lead: 0.05 }); }
+            }, it.code)))) : null,
+        h('div', { style: 'margin-top:6px' },
+          h('div', { class: 'row between' },
+            h('span', { class: 'small muted' }, 'Learned words library (tap any word to hear in Morse):'),
+            h('span', { class: 'small muted' }, learnedWords.length + ' words')),
+          learnedWords.length
+            ? h('div', { class: 'stats-chips' },
+                learnedWords.map((w) => h('button', {
+                  class: 'word-chip',
+                  onclick: () => { MT.Audio.ensure(); MT.Audio.play(w, { lead: 0.05 }); }
+                }, w)))
+            : h('p', { class: 'small muted' }, 'Unlock more letters in Set 1 to start forming words.'))),
+      h('section', { class: 'card' },
+        h('div', { class: 'row between' },
+          h('b', {}, 'Lesson sets & curriculum progress'),
+          h('span', { class: 'muted small' }, (doneKoch + doneQso) + ' / 54 completed')),
+        h('div', { class: 'stats-subcard' },
+          h('div', { class: 'row between' },
+            h('b', {}, 'Set 1: Characters (Koch Method)'),
+            h('span', { class: 'muted small' }, doneKoch + ' / 39 completed')),
+          UI.bar(doneKoch / 39, doneKoch >= 39 ? 'good' : ''),
+          h('div', { class: 'stats-list' },
+            kochLessons.map((l) => {
+              const cls = 'stats-item ' + (l.isDone ? 'done' : (l.isNext ? 'next' : 'locked'));
+              const tag = l.isDone
+                ? h('span', { class: 'good-text small' }, '✓ Completed')
+                : (l.isNext
+                    ? h('span', { class: 'accent small', style: 'font-weight:700' }, '▶ Up next')
+                    : h('span', { class: 'muted small' }, '🔒 Locked'));
+              return h('button', {
+                class: cls,
+                onclick: () => { MT.Audio.ensure(); MT.Audio.play(l.chars.join(' '), { lead: 0.05 }); },
+                title: 'Tap to preview sound: ' + l.chars.join(', ')
+              },
+                h('div', { class: 'stats-item-left' },
+                  h('span', { class: 'stats-lesson-num' }, 'L' + l.num),
+                  h('div', {},
+                    h('div', {}, l.title),
+                    h('small', { class: 'muted' }, l.chars.map((c) => c + ' ' + MT.CODE[c]).join('  ·  ')))),
+                h('div', { class: 'stats-item-right' },
+                  tag,
+                  h('span', { class: 'muted small' }, '🔊')));
+            }))),
+        h('div', { class: 'stats-subcard' },
+          h('div', { class: 'row between' },
+            h('b', {}, 'Set 2: Q-Codes & Callsigns (On-Air CW)'),
+            h('span', { class: 'muted small' },
+              !S.qsoPartAUnlocked() ? '🔒 Locked (unlocks at L15)' : doneQso + ' / 15 completed')),
+          UI.bar(!S.qsoPartAUnlocked() ? 0 : doneQso / 15, doneQso >= 15 ? 'good' : ''),
+          h('div', { class: 'stats-list' },
+            qsoLessons.map((l) => {
+              const cls = 'stats-item ' + (l.isDone ? 'done' : (l.isNext ? 'next' : 'locked'));
+              let tagText = '🔒 Locked';
+              if (l.isDone) tagText = '✓ Completed';
+              else if (l.isNext) tagText = '▶ Up next';
+              else if (!l.isUnlockedSet) tagText = l.id <= 6 ? '🔒 Reach L15' : '🔒 Reach L30';
+
+              const tag = l.isDone
+                ? h('span', { class: 'good-text small' }, '✓ Completed')
+                : (l.isNext
+                    ? h('span', { class: 'accent small', style: 'font-weight:700' }, '▶ Up next')
+                    : h('span', { class: 'muted small' }, tagText));
+
+              return h('button', {
+                class: cls,
+                onclick: () => { MT.Audio.ensure(); MT.Audio.play(l.sample, { lead: 0.05 }); },
+                title: 'Tap to preview sound: ' + l.sample
+              },
+                h('div', { class: 'stats-item-left' },
+                  h('span', { class: 'stats-lesson-num' }, 'L' + l.num),
+                  h('div', {},
+                    h('div', {}, l.title),
+                    h('small', { class: 'muted' }, l.sub))),
+                h('div', { class: 'stats-item-right' },
+                  tag,
+                  h('span', { class: 'muted small' }, '🔊')));
+            })))));
+  });
+
+  /* ---------------------------------------------------------- Settings */
+  App.registerScreen('settings', (root) => {
+    const st = S.settings;
+    const slider = (label, key, min, max, step, fmt) => {
+      const val = h('span', { class: 'muted' }, fmt(st[key]));
+      const inp = h('input', {
+        type: 'range', min: min, max: max, step: step, value: st[key],
+        oninput: (e) => { st[key] = Number(e.target.value); val.textContent = fmt(st[key]); S.save(); }
+      });
+      return h('label', { class: 'set' }, h('div', { class: 'row between' }, h('span', {}, label), val), inp);
+    };
+    const segSelect = (label, key, options, descMap) => {
+      const desc = h('p', { class: 'muted small' }, (descMap && descMap[st[key]]) || '');
+      const buttons = [];
+      const row = h('div', { class: 'seg' }, options.map((opt) => {
+        const b = h('button', {
+          class: 'seg-btn' + (st[key] === opt.id ? ' active' : ''),
+          'data-setting': key, 'data-val': opt.id,
+          onclick: () => {
+            st[key] = opt.id;
+            S.save();
+            buttons.forEach((x) => x.el.classList.toggle('active', x.id === opt.id));
+            if (descMap) desc.textContent = descMap[opt.id] || '';
+          }
+        }, opt.label);
+        buttons.push({ id: opt.id, el: b });
+        return b;
+      }));
+      return h('div', { class: 'set' }, h('span', {}, label), row, descMap ? desc : null);
+    };
+
+    const hapticBox = h('input', {
+      type: 'checkbox', onchange: (e) => { st.haptics = e.target.checked; S.save(); if (st.haptics) MT.Audio.tapHaptic(20); }
+    });
+    hapticBox.checked = st.haptics !== false;
+    const hapticNote = MT.Audio.canHaptic()
+      ? 'Vibrates along with Morse tones and button taps (Android).'
+      : 'Vibrates with Morse tones on supported Android devices (not supported on this browser/iOS).';
+
+    const swStatus = h('p', { class: 'muted small' }, '✓ Self-contained app — works offline.');
+    if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+      navigator.serviceWorker.ready.then(() => { swStatus.textContent = '✓ Offline mode ready — cached for use without internet.'; });
+    }
+
+    root.append(
+      h('header', { class: 'top' }, h('div', {}, h('h1', {}, 'Settings'))),
+      h('section', { class: 'card' }, h('b', {}, 'Sound & haptics'),
+        slider('Character speed', 'charWpm', 15, 30, 1, (v) => v + ' WPM'),
+        slider('Overall speed (gaps)', 'effWpm', 5, 30, 1, (v) => v + ' WPM'),
+        h('p', { class: 'muted small' }, 'Characters always play fast; a lower overall speed just adds longer pauses (Farnsworth). Raise it as you improve.'),
+        slider('Tone pitch', 'freq', 400, 900, 10, (v) => v + ' Hz'),
+        slider('Volume', 'volume', 0.1, 1, 0.05, (v) => Math.round(v * 100) + '%'),
+        h('label', { class: 'toggle' }, hapticBox,
+          h('span', {}, h('b', {}, 'Haptic vibration'), h('small', { class: 'muted' }, hapticNote))),
+        h('button', { class: 'btn small', onclick: () => { MT.Audio.ensure(); MT.Audio.play('PARIS', { lead: 0.1 }); } }, '🔊 Test sound'),
+        h('p', { class: 'muted small' }, 'iPhone: sound is silenced by the ring/silent switch.')),
+      h('section', { class: 'card' }, h('b', {}, 'Training & input'),
+        segSelect('On-screen input', 'inputMode', [
+          { id: 'auto', label: 'Auto (Cards → Keys)' },
+          { id: 'keys', label: 'Key grid' },
+          { id: 'ditdah', label: '· / − Pad' },
+          { id: 'tree', label: 'Morse tree' }
+        ], {
+          auto: 'Lessons 1–4 use large multiple-choice cards; Lesson 5+ switches to the unlocked-character key grid.',
+          keys: 'Always show only your unlocked characters in a clean grid (no hunting on QWERTY).',
+          ditdah: 'Tap · (dit) and − (dah) to echo the rhythm you heard; auto-commits each character.',
+          tree: 'Step left (·) or right (−) down the Morse binary tree and tap the landed character.'
+        }),
+        segSelect('Character key order', 'keyOrder', [
+          { id: 'koch', label: 'Order learned (Koch)' },
+          { id: 'alpha', label: 'Alphabetical (A–Z)' }
+        ], {
+          koch: 'Keys stay in the order you unlocked them so existing buttons never jump around when a new letter is added.',
+          alpha: 'Sorts unlocked letters A–Z, then numbers 0–9, then punctuation.'
+        }),
+        slider('Characters per group', 'groupSize', 3, 8, 1, (v) => v),
+        slider('Groups per Koch round', 'groupsPerRound', 5, 20, 1, (v) => v),
+        slider('Accuracy to unlock next letter', 'threshold', 80, 98, 1, (v) => v + '%'),
+        slider('Daily goal', 'goalMin', 3, 30, 1, (v) => v + ' min')),
+      h('section', { class: 'card' }, h('b', {}, 'Data & offline'), swStatus,
+        h('div', { class: 'stack' },
+          h('button', { class: 'btn small', onclick: () => {
+            const t = S.exportJson();
+            (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
+              .then(() => alert('Backup copied to clipboard.'), () => prompt('Copy your backup:', t));
+          } }, 'Copy progress backup'),
+          h('button', { class: 'btn small', onclick: () => {
+            const t = prompt('Paste a backup to restore:');
+            if (!t) return;
+            try { S.importJson(t); alert('Restored.'); App.go('home'); } catch (e) { alert('That does not look like a valid backup.'); }
+          } }, 'Restore from backup'),
+          h('button', { class: 'btn small danger', onclick: () => {
+            if (confirm('Erase all progress and settings?')) { S.reset(); App.go('home'); }
+          } }, 'Reset all progress'))));
+  });
+})(globalThis);
+
+/* ==================== koch.js ==================== */
+/* Mode A: Koch method trainer. Start with 2 characters, unlock one more per successful round. */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+  const h = MT.h, UI = MT.UI, App = MT.App, S = MT.Store;
+  const MAX = MT.KOCH.length;
+
+  function unlocked() { return MT.KOCH.slice(0, S.data.koch.level); }
+
+  function weightForChar(c, set) {
+    const i = set.indexOf(c);
+    let w = 1;
+    if (i === set.length - 1) w += 2;            // newest letter
+    else if (i === set.length - 2) w += 0.5;
+    const a = S.acc(c);
+    if (a != null) w += (1 - a) * 2;
+    return w;
+  }
+
+  /** Random group (or word/callsign if selected after Lesson 20) favouring the newest letter and the ones you miss. */
+  function pickGroup(size) {
+    const set = unlocked();
+    const pt = S.effectivePracticeType();
+    if (pt !== 'random') {
+      return MT.pickWordOrCallsign(set, pt, (c) => weightForChar(c, set));
+    }
+    const weights = set.map((c) => weightForChar(c, set));
+    let out = '';
+    for (let i = 0; i < size; i++) out += MT.pickWeighted(set, weights);
+    return out;
+  }
+
+  function startRound() {
+    const level = S.data.koch.level;
+    const lessonNum = level - 1;
+    const newest = MT.KOCH[level - 1];
+    App.go('practice', {
+      title: 'Lesson ' + lessonNum,
+      intro: 'Listen to ' + S.settings.groupSize + ' characters, then type what you heard. ' +
+             'Reach ' + S.settings.threshold + '% over ' + S.settings.groupsPerRound + ' groups to unlock the next letter.',
+      chars: unlocked(),
+      groups: S.settings.groupsPerRound,
+      pickGroup: pickGroup,
+      onQuit: () => App.go('koch'),
+      onFinish: (result, completed) => {
+        const rec = S.recordResult(result, { srs: false });
+        const pass = completed && result.accuracy * 100 >= S.settings.threshold;
+        const prevDone = S.lessonsCompleted();
+        let message = completed ? null : 'Round ended early — progress saved, but no unlock this time.';
+        let unlockedNew = false;
+        S.data.koch.last = { level: level, acc: result.accuracy };
+        if (pass) {
+          S.data.koch.highestPassed = Math.max(S.data.koch.highestPassed || 0, lessonNum);
+        }
+        if (pass && S.data.koch.level < MAX) {
+          S.data.koch.level++;
+          unlockedNew = true;
+          message = '🎉 Unlocked “' + MT.KOCH[S.data.koch.level - 1] + '”! Time to learn it.';
+        } else if (pass) {
+          message = '🏆 You have unlocked every character. Keep practising to speed up!';
+        } else if (completed) {
+          message = 'Not quite ' + S.settings.threshold + '% yet — another round and you will get there. Focus on “' + newest + '”.';
+        }
+        const badge = pass && lessonNum > prevDone ? S.badgeForLesson(lessonNum) : null;
+        if (badge) message += '  ' + badge.icon + ' Badge unlocked: ' + badge.title + ' (Lesson ' + badge.lesson + ')!';
+        if (rec.newlyDone) message += '  🔥 Daily goal reached — streak: ' + rec.streak + '!';
+        S.save();
+        App.go('result', {
+          title: 'Lesson ' + lessonNum + ' complete', result: result, message: message, good: pass,
+          actions: [
+            unlockedNew
+              ? { label: 'Learn “' + MT.KOCH[S.data.koch.level - 1] + '” ›', primary: true, fn: () => App.go('koch') }
+              : { label: 'Another round', primary: true, fn: startRound },
+            { label: 'Back to lesson', fn: () => App.go('koch') },
+            { label: 'Home', fn: () => App.go('home') }
+          ]
+        });
+      }
+    });
+  }
+
+  App.registerScreen('koch', (root) => {
+    const k = S.data.koch;
+    // New characters must be introduced before they are drilled.
+    if (k.introduced < k.level) {
+      return {
+        redirect: ['learn', {
+          chars: MT.KOCH.slice(k.introduced, k.level),
+          onDone: () => { k.introduced = k.level; S.save(); App.go('koch'); },
+          onBack: () => App.go('home')
+        }]
+      };
+    }
+
+    const set = unlocked();
+    const last = k.last && k.last.level === k.level ? k.last : null;
+    const move = (d) => {
+      const n = Math.max(2, Math.min(MAX, k.level + d));
+      if (n !== k.level) { k.level = n; S.save(); App.go('koch'); }
+    };
+
+    root.append(
+      h('header', { class: 'top' },
+        h('button', { class: 'btn ghost small', onclick: () => App.go('home') }, '‹ Home'),
+        h('div', { class: 'grow' }, h('h1', {}, 'Koch Trainer'))),
+      UI.setSwitcher(1),
+      h('section', { class: 'card' },
+        h('div', { class: 'row between' },
+          h('button', { class: 'btn small', onclick: () => move(-1), disabled: k.level <= 2 ? 'disabled' : null, 'aria-label': 'Previous lesson' }, '‹'),
+          h('div', { class: 'center' }, h('b', { class: 'big-num' }, 'Lesson ' + (k.level - 1)), h('div', { class: 'muted small' }, 'of ' + (MAX - 1))),
+          h('button', { class: 'btn small', onclick: () => move(1), disabled: k.level >= MAX ? 'disabled' : null, 'aria-label': 'Next lesson' }, '›')),
+        h('div', { class: 'chips' }, MT.KOCH.map((c, i) =>
+          UI.charChip(c, i < k.level ? (i === k.level - 1 ? 'new' : 'on') : 'locked'))),
+        h('p', { class: 'muted small' }, 'Highlighted = newest letter. Tap a letter to hear it.')),
+      h('section', { class: 'card' },
+        h('div', { class: 'row between' },
+          h('b', {}, 'Goal'), h('span', { class: 'muted' }, S.settings.threshold + '% accuracy')),
+        UI.bar(last ? last.acc : 0, last && last.acc * 100 >= S.settings.threshold ? 'good' : ''),
+        h('p', { class: 'small muted' }, last
+          ? 'Last round: ' + Math.round(last.acc * 100) + '%'
+          : 'One round = ' + S.settings.groupsPerRound + ' groups of ' + S.settings.groupSize + ' characters.'),
+        UI.badgeStrip('koch')),
+      UI.practiceTypeControl(),
+      h('div', { class: 'stack' },
+        h('button', { class: 'btn primary big', onclick: () => { MT.Audio.ensure(); startRound(); } }, '▶ Start round'),
+        h('button', { class: 'btn', onclick: () => App.go('learn', {
+          chars: [MT.KOCH[k.level - 1]],
+          onDone: () => App.go('koch'), onBack: () => App.go('koch')
+        }) }, 'Review “' + MT.KOCH[k.level - 1] + '”')));
+  });
+
+  App.registerMode({
+    id: 'koch', icon: '🎧', title: 'Koch Trainer', screen: 'koch',
+    tagline: () => 'Lesson ' + (S.data.koch.level - 1) + ' · ' + S.data.koch.level + ' characters'
+  });
+})(globalThis);
+
+/* ==================== daily.js ==================== */
+/* Mode E: Daily practice, timed session with spaced repetition on weak characters. */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+  const h = MT.h, UI = MT.UI, App = MT.App, S = MT.Store;
+
+  function weightForChar(c) {
+    const a = S.acc(c);
+    let w = 1 + (a == null ? 2 : (1 - a) * 4);
+    w *= S.isDue(c) ? 2 : 0.5;
+    return w;
+  }
+
+  /** Weighted pick: due and weak characters come up more often. */
+  function pickGroup(size) {
+    const set = MT.KOCH.slice(0, S.data.koch.level);
+    const pt = S.effectivePracticeType();
+    if (pt !== 'random') {
+      return MT.pickWordOrCallsign(set, pt, weightForChar);
+    }
+    const weights = set.map(weightForChar);
+    let out = '';
+    for (let i = 0; i < size; i++) out += MT.pickWeighted(set, weights);
+    return out;
+  }
+
+  function startSession() {
+    const goalSec = S.settings.goalMin * 60;
+    App.go('practice', {
+      title: 'Daily practice',
+      intro: 'A ' + S.settings.goalMin + '-minute session. Characters you find hard come up more often.',
+      chars: MT.KOCH.slice(0, S.data.koch.level),
+      timeLimitSec: goalSec,
+      pickGroup: pickGroup,
+      onQuit: () => App.go('daily'),
+      onFinish: (result, completed) => {
+        const rec = S.recordResult(result, { srs: true });
+        let message = rec.doneToday
+          ? (rec.newlyDone ? '🔥 Daily goal reached! Streak: ' + rec.streak + ' day' + (rec.streak === 1 ? '' : 's') + '.' : '✓ Daily goal already done today. Bonus practice!')
+          : 'Session ended early — progress saved. ' + UI.fmtTime(Math.max(0, goalSec - S.day().sec)) + ' to go for today.';
+        App.go('result', {
+          title: completed ? 'Session complete' : 'Session saved', result: result, message: message, good: rec.doneToday,
+          actions: [
+            { label: 'Practise more', primary: !rec.doneToday, fn: startSession },
+            { label: 'Home', primary: rec.doneToday, fn: () => App.go('home') }
+          ]
+        });
+      }
+    });
+  }
+
+  App.registerScreen('daily', (root) => {
+    const today = S.day();
+    const goal = S.settings.goalMin * 60;
+    const dueCount = MT.KOCH.slice(0, S.data.koch.level).filter((c) => S.charStat(c) && S.isDue(c)).length;
+
+    root.append(
+      h('header', { class: 'top' },
+        h('button', { class: 'btn ghost small', onclick: () => App.go('home') }, '‹ Home'),
+        h('div', { class: 'grow' }, h('h1', {}, 'Daily Practice'))),
+      h('section', { class: 'card center' },
+        h('div', { class: 'streak' }, '🔥 ' + S.streak()),
+        h('div', { class: 'muted' }, 'day streak'),
+        UI.weekStrip(),
+        UI.badgeStrip()),
+      h('section', { class: 'card' },
+        h('div', { class: 'row between' }, h('b', {}, 'Today'),
+          h('span', { class: 'muted' }, UI.fmtTime(Math.min(today.sec, goal)) + ' / ' + UI.fmtTime(goal))),
+        UI.bar(today.sec / goal, today.done ? 'good' : ''),
+        h('p', { class: 'small muted' }, dueCount ? dueCount + ' character' + (dueCount === 1 ? '' : 's') + ' due for review.' : 'Nothing overdue — a mixed review today.')),
+      h('section', { class: 'card' }, h('b', {}, 'Weak characters'), UI.weakList(5)),
+      UI.practiceTypeControl(),
+      h('div', { class: 'stack' },
+        h('button', { class: 'btn primary big', onclick: () => { MT.Audio.ensure(); startSession(); } },
+          today.done ? '▶ Practise more' : '▶ Start today’s session')));
+  });
+
+  App.registerMode({
+    id: 'daily', icon: '📅', title: 'Daily Practice', screen: 'daily',
+    tagline: () => S.settings.goalMin + ' minutes · targets your weak spots'
+  });
+})(globalThis);
+
+/* ==================== arcade.js ==================== */
+/* Mode B: Arcade. Bubbles fall while their letter plays; type it before it lands. */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+  const h = MT.h, UI = MT.UI, App = MT.App, S = MT.Store;
+
+  const LIVES = 3;
+  const POPS_PER_LEVEL = 8;
+
+  /** Difficulty curve per level. fall = seconds to reach the bottom. */
+  function params(level) {
+    return {
+      fall: Math.max(3.5, 9 - (level - 1) * 0.6),
+      gap: Math.max(0.5, 2.0 - (level - 1) * 0.2),
+      maxOn: Math.min(4, 1 + Math.ceil(level / 2))
+    };
+  }
+
+  /** Weak characters come up more often. */
+  function pick(chars) {
+    const w = chars.map((c) => { const a = S.acc(c); return 1 + (a == null ? 1 : (1 - a) * 3); });
+    return MT.pickWeighted(chars, w);
+  }
+
+  function arcadeData() {
+    return S.data.arcade || (S.data.arcade = { best: 0, bestCombo: 0, games: 0 });
+  }
+
+  /* ------------------------------------------------------------- Hub */
+  App.registerScreen('arcade', (root) => {
+    const a = arcadeData();
+    const chars = MT.KOCH.slice(0, S.data.koch.level);
+    const hintBox = h('input', {
+      type: 'checkbox', onchange: (e) => { S.settings.arcadeHints = e.target.checked; S.save(); }
+    });
+    hintBox.checked = !!S.settings.arcadeHints;
+
+    root.append(
+      h('header', { class: 'top' },
+        h('button', { class: 'btn ghost small', onclick: () => App.go('home') }, '‹ Home'),
+        h('div', { class: 'grow' }, h('h1', {}, 'Arcade'))),
+      h('div', { class: 'tiles' },
+        h('div', { class: 'tile' }, h('b', {}, a.best), h('small', {}, 'high score')),
+        h('div', { class: 'tile' }, h('b', {}, '×' + a.bestCombo), h('small', {}, 'best combo')),
+        h('div', { class: 'tile' }, h('b', {}, a.games), h('small', {}, 'games'))),
+      h('section', { class: 'card' }, h('b', {}, 'How to play'),
+        h('p', { class: 'small' }, 'Each bubble plays its letter as it appears. Type the letter before the bubble reaches the bottom.'),
+        h('p', { class: 'small muted' }, 'Tap a bubble or press Space to hear it again. A wrong key breaks your combo and shows that bubble’s dots and dashes. If a bubble reaches the bottom you lose a ♥.')),
+      h('section', { class: 'card' }, h('b', {}, 'Characters in play'),
+        h('div', { class: 'chips' }, UI.orderChars(chars).map((c) => UI.charChip(c))),
+        h('p', { class: 'muted small' }, 'Unlock more letters in the Koch Trainer.')),
+      h('label', { class: 'card toggle' }, hintBox,
+        h('span', {}, h('b', {}, 'Show dots & dashes'), h('small', { class: 'muted' }, 'Easier, but you learn by looking instead of listening. Half points.'))),
+      h('div', { class: 'stack' },
+        h('button', { class: 'btn primary big', onclick: () => { MT.Audio.ensure(); App.go('arcade-play'); } }, '▶ Play')));
+  });
+
+  /* ------------------------------------------------------------ Game */
+  /** params.manual = true: no animation loop; tests drive it via MT.Arcade.debug. */
+  App.registerScreen('arcade-play', (root, p) => {
+    const chars = MT.KOCH.slice(0, S.data.koch.level);
+    const hints = !!S.settings.arcadeHints;
+    let level = 1, score = 0, combo = 0, bestCombo = 0, lives = LIVES, pops = 0;
+    let t = 0, nextSpawn = 1.2, running = true, over = false, raf = 0, last = 0, uid = 0;
+    let correct = 0, total = 0, pauseBox = null;
+    const drops = [];
+    const stats = {}, confusions = {};
+    const timers = [];
+    const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+
+    // HUD
+    const scoreEl = h('b', { class: 'a-score' }, '0');
+    const comboEl = h('span', { class: 'a-combo' });
+    const livesEl = h('span', { class: 'a-lives' });
+    const levelEl = h('span', { class: 'a-level' });
+    const field = h('div', { class: 'field' }, h('div', { class: 'danger' }));
+    const kb = UI.buildInputPad({ chars: chars, onChar: typeChar });
+    const box = h('div', { class: 'arcade' },
+      h('div', { class: 'a-hud' },
+        h('button', { class: 'btn ghost small', onclick: () => pause(true), 'aria-label': 'Pause' }, '❚❚'),
+        h('div', { class: 'a-mid' }, scoreEl, comboEl), h('div', { class: 'a-right' }, livesEl, levelEl)),
+      field, kb);
+    box.addEventListener('mousedown', (e) => { if (e.target.closest('button')) e.preventDefault(); });
+    root.append(box);
+
+    function hud() {
+      scoreEl.textContent = score;
+      const mult = 1 + Math.floor(combo / 5);
+      comboEl.textContent = combo >= 2 ? 'combo ' + combo + (mult > 1 ? ' · ×' + mult : '') : '';
+      livesEl.textContent = '♥'.repeat(Math.max(0, lives)) + '♡'.repeat(Math.max(0, LIVES - lives));
+      levelEl.textContent = 'Lv ' + level;
+    }
+
+    function floater(text, xPct, yPx, cls) {
+      const f = h('div', { class: 'floater ' + (cls || ''), style: 'left:' + xPct + '%;top:' + yPx + 'px' }, text);
+      field.append(f);
+      later(() => f.remove(), 900);
+    }
+
+    function fieldH() { return Math.max(100, field.clientHeight - 58); }
+
+    function playDrop(d) {
+      const hd = MT.Audio.play(d.ch, { lead: 0.05 });
+      // Wait until the sound finishes before the next bubble appears.
+      nextSpawn = Math.max(nextSpawn, t + hd.duration + 0.15 + params(level).gap);
+    }
+
+    let lastX = 50;
+    function spawn() {
+      const ch = pick(chars);
+      let x;
+      do { x = 12 + Math.random() * 76; } while (Math.abs(x - lastX) < 18);
+      lastX = x;
+      const d = { id: ++uid, ch: ch, x: x, y: 0, speed: 1 / params(level).fall, wrong: false, el: null };
+      d.el = h('button', { class: 'drop' + (hints ? ' hint' : ''), style: 'left:' + x + '%', onclick: () => { if (running) playDrop(d); } },
+        hints ? UI.pattern(ch) : '?');
+      field.append(d.el);
+      drops.push(d);
+      nextSpawn = t + 0.5;
+      playDrop(d);
+      position(d);
+    }
+
+    function position(d) {
+      d.el.style.transform = 'translate(-50%,' + Math.round(d.y * fieldH()) + 'px)';
+    }
+
+    function remove(d, cls, ok) {
+      drops.splice(drops.indexOf(d), 1);
+      const s = stats[d.ch] || (stats[d.ch] = { seen: 0, correct: 0 });
+      s.seen++; total++;
+      if (ok && !d.wrong) { s.correct++; correct++; }
+      d.el.textContent = d.ch;
+      d.el.classList.add(cls);
+      d.el.disabled = true;
+      const el = d.el;
+      later(() => el.remove(), 450);
+    }
+
+    function land(d) {
+      lives--;
+      combo = 0;
+      remove(d, 'land', false);
+      field.classList.remove('hit'); void field.offsetWidth; field.classList.add('hit');
+      hud();
+      if (lives <= 0) gameOver(true);
+    }
+
+    function lowest(list) {
+      return list.reduce((a, b) => (!a || b.y > a.y ? b : a), null);
+    }
+
+    function typeChar(c) {
+      if (!running || over) return;
+      const d = lowest(drops.filter((x) => x.ch === c));
+      if (d) {
+        if (!d.wrong) {
+          combo++;
+          bestCombo = Math.max(bestCombo, combo);
+          let pts = 10 * level * (1 + Math.floor(combo / 5)) + (d.y < 0.5 ? 5 * level : 0);
+          if (hints) pts = Math.ceil(pts / 2);
+          score += pts;
+          floater('+' + pts, d.x, d.y * fieldH(), 'good');
+          pops++;
+          if (pops % POPS_PER_LEVEL === 0) {
+            level++;
+            floater('Level ' + level + '!', 50, fieldH() * 0.35, 'level');
+          }
+        }
+        remove(d, 'pop', true);
+        if (!drops.length) nextSpawn = Math.min(nextSpawn, t + 0.6);
+      } else {
+        combo = 0;
+        const target = lowest(drops);
+        if (target) {
+          if (!target.wrong) {
+            target.wrong = true;
+            const k = target.ch + '>' + c;
+            confusions[k] = (confusions[k] || 0) + 1;
+          }
+          target.el.classList.add('wrong', 'hint');
+          target.el.innerHTML = '';
+          target.el.append(UI.pattern(target.ch));
+          target.el.classList.remove('shake'); void target.el.offsetWidth; target.el.classList.add('shake');
+          floater('✗ ' + c, target.x, target.y * fieldH() + 60, 'bad');
+        }
+      }
+      hud();
+    }
+
+    function step(dt) {
+      if (!running || over) return;
+      t += dt;
+      for (let i = drops.length - 1; i >= 0; i--) {
+        const d = drops[i];
+        d.y += dt * d.speed;
+        if (d.y >= 1) { d.y = 1; land(d); if (over) return; } else position(d);
+      }
+      if (t >= nextSpawn && drops.length < params(level).maxOn) spawn();
+    }
+
+    function frame(ts) {
+      if (over) return;
+      if (last) step(Math.min(0.1, (ts - last) / 1000));
+      last = ts;
+      raf = requestAnimationFrame(frame);
+    }
+
+    function pause(on) {
+      if (over || (on === !running)) return;
+      running = !on;
+      last = 0;
+      if (on) {
+        MT.Audio.stop();
+        pauseBox = h('div', { class: 'overlay' }, h('div', { class: 'card center' },
+          h('h2', {}, 'Paused'),
+          h('div', { class: 'stack' },
+            h('button', { class: 'btn primary', onclick: () => pause(false) }, '▶ Resume'),
+            h('button', { class: 'btn', onclick: () => gameOver(false) }, 'End game'))));
+        box.append(pauseBox);
+      } else if (pauseBox) {
+        pauseBox.remove();
+        pauseBox = null;
+      }
+    }
+
+    function gameOver(died) {
+      if (over) return;
+      over = true;
+      running = false;
+      cleanup();
+      if (!total) { App.go('arcade'); return; }
+      const a = arcadeData();
+      const newBest = score > a.best;
+      a.best = Math.max(a.best, score);
+      a.bestCombo = Math.max(a.bestCombo, bestCombo);
+      a.games++;
+      const result = {
+        chars: stats, confusions: confusions, groups: 0, activeSec: Math.round(t),
+        correct: correct, total: total, accuracy: total ? correct / total : 0
+      };
+      const rec = S.recordResult(result, { srs: false });
+      let message = newBest ? '🏆 New high score: ' + score + '!' : (died ? 'Out of lives. ' : '') + 'High score: ' + a.best;
+      if (rec.newlyDone) message += '  🔥 Daily goal reached. Streak: ' + rec.streak + '!';
+      App.go('result', {
+        title: 'Game over', result: result, message: message, good: newBest,
+        tiles: [
+          { v: score, l: 'score' },
+          { v: 'Lv ' + level, l: 'reached' },
+          { v: '×' + bestCombo, l: 'best combo' }
+        ],
+        actions: [
+          { label: '▶ Play again', primary: true, fn: () => App.go('arcade-play') },
+          { label: 'Arcade menu', fn: () => App.go('arcade') },
+          { label: 'Home', fn: () => App.go('home') }
+        ]
+      });
+    }
+
+    function onKey(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      const k = e.key;
+      if (k === 'Escape') { e.preventDefault(); pause(running); return; }
+      if (!running) { if (k === 'Enter' || k === ' ') { e.preventDefault(); pause(false); } return; }
+      if (k === ' ') { e.preventDefault(); const d = lowest(drops); if (d) playDrop(d); return; }
+      if (k.length === 1 && MT.CODE[k.toUpperCase()]) { e.preventDefault(); typeChar(k.toUpperCase()); }
+    }
+    function onVis() { if (document.visibilityState === 'hidden') pause(true); }
+
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('visibilitychange', onVis);
+    let cleaned = false;
+    function cleanup() {
+      if (cleaned) return;
+      cleaned = true;
+      cancelAnimationFrame(raf);
+      timers.forEach(clearTimeout);
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('visibilitychange', onVis);
+      MT.Audio.stop();
+      if (kb.cleanup) kb.cleanup();
+      if (MT.Arcade.debug && MT.Arcade.debug.owner === step) MT.Arcade.debug = null;
+    }
+
+    hud();
+    floater('Get ready…', 50, 120, 'level');
+    MT.Arcade.debug = {
+      owner: step, step: step, typeChar: typeChar, spawn: spawn, pause: pause, end: () => gameOver(false),
+      get drops() { return drops; },
+      get state() { return { score: score, combo: combo, lives: lives, level: level, pops: pops, t: t, over: over, running: running }; }
+    };
+    if (!p.manual) raf = requestAnimationFrame(frame);
+    return cleanup;
+  }, { nav: false });
+
+  MT.Arcade = { params: params, debug: null };
+
+  App.registerMode({
+    id: 'arcade', icon: '🎮', title: 'Arcade', screen: 'arcade',
+    tagline: () => {
+      const a = arcadeData();
+      return a.games ? 'High score ' + a.best + ' · catch the falling letters' : 'Catch the falling letters by ear';
+    }
+  });
+})(globalThis);
+
+/* ==================== send.js ==================== */
+/* Mode D: Send with a key. Tap/hold the paddle or Spacebar to send Morse characters. */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+  const h = MT.h, UI = MT.UI, App = MT.App, S = MT.Store;
+
+  function sendData() {
+    return S.data.send || (S.data.send = { rounds: 0, bestAcc: 0 });
+  }
+
+  /** Timing thresholds in ms for a given sending WPM. */
+  function thresholds(wpm) {
+    const unitMs = (1.2 / (wpm || 12)) * 1000;
+    return {
+      unitMs: unitMs,
+      dashMs: unitMs * 2.0,     // < 2 units = dit, >= 2 units = dah
+      commitMs: unitMs * 2.6,   // silence after release to commit character
+      maxBarMs: unitMs * 4.5
+    };
+  }
+
+  function pickGroup(chars, size) {
+    const weightFn = (c) => { const a = S.acc(c); return 1 + (a == null ? 1.5 : (1 - a) * 3); };
+    const pt = S.effectivePracticeType();
+    if (pt !== 'random') {
+      return MT.pickWordOrCallsign(chars, pt, weightFn);
+    }
+    const w = chars.map(weightFn);
+    let out = '';
+    for (let i = 0; i < size; i++) out += MT.pickWeighted(chars, w);
+    return out;
+  }
+
+  /* ------------------------------------------------------------- Hub */
+  App.registerScreen('send', (root) => {
+    const sd = sendData();
+    const st = S.settings;
+    if (!st.sendWpm) st.sendWpm = 12;
+    if (st.sendHints == null) st.sendHints = true;
+    const chars = MT.KOCH.slice(0, S.data.koch.level);
+
+    const wpmVal = h('span', { class: 'muted' }, st.sendWpm + ' WPM (dit ≈ ' + Math.round(1200 / st.sendWpm) + ' ms)');
+    const wpmSlider = h('input', {
+      type: 'range', min: 5, max: 25, step: 1, value: st.sendWpm,
+      oninput: (e) => {
+        st.sendWpm = Number(e.target.value);
+        wpmVal.textContent = st.sendWpm + ' WPM (dit ≈ ' + Math.round(1200 / st.sendWpm) + ' ms)';
+        S.save();
+      }
+    });
+
+    const hintBox = h('input', {
+      type: 'checkbox', onchange: (e) => { st.sendHints = e.target.checked; S.save(); }
+    });
+    hintBox.checked = !!st.sendHints;
+
+    root.append(
+      h('header', { class: 'top' },
+        h('button', { class: 'btn ghost small', onclick: () => App.go('home') }, '‹ Home'),
+        h('div', { class: 'grow' }, h('h1', {}, 'Send with a Key'))),
+      h('div', { class: 'tiles' },
+        h('div', { class: 'tile' }, h('b', {}, sd.rounds), h('small', {}, 'rounds')),
+        h('div', { class: 'tile' }, h('b', {}, sd.rounds ? Math.round(sd.bestAcc * 100) + '%' : '–'), h('small', {}, 'best accuracy')),
+        h('div', { class: 'tile' }, h('b', {}, st.sendWpm + ' WPM'), h('small', {}, 'key speed'))),
+      h('section', { class: 'card' }, h('b', {}, 'How to send'),
+        h('p', { class: 'small' }, 'Tap quickly for a dit (·) and hold ~3× longer for a dah (−). Pause briefly when done with a letter to lock it in.'),
+        h('p', { class: 'small muted' }, 'Use the big key pad on screen or hold the Spacebar on a keyboard.')),
+      h('section', { class: 'card' },
+        h('label', { class: 'set' },
+          h('div', { class: 'row between' }, h('b', {}, 'Keying speed'), wpmVal),
+          wpmSlider)),
+      h('label', { class: 'card toggle' }, hintBox,
+        h('span', {}, h('b', {}, 'Show dot & dash hint'), h('small', { class: 'muted' }, 'Display the target pattern while you learn to key each letter.'))),
+      h('section', { class: 'card' }, h('b', {}, 'Characters in play'),
+        h('div', { class: 'chips' }, UI.orderChars(chars).map((c) => UI.charChip(c)))),
+      UI.practiceTypeControl(),
+      h('div', { class: 'stack' },
+        h('button', { class: 'btn primary big', onclick: () => { MT.Audio.ensure(); App.go('send-play'); } }, '▶ Start sending')));
+  });
+
+  /* -------------------------------------------------------- Practice */
+  App.registerScreen('send-play', (root, p) => {
+    const st = S.settings;
+    const chars = MT.KOCH.slice(0, S.data.koch.level);
+    const size = st.groupSize || 5;
+    const totalGroups = p.groups || st.groupsPerRound || 10;
+    const th = thresholds(st.sendWpm || 12);
+
+    let groupsDone = 0, idx = 0, targetGroup = '';
+    let curPat = '', downAt = 0, isDown = false;
+    let commitTimer = null, meterRaf = 0, activeSec = 0, finished = false;
+    let groupResults = []; // [{exp, sentPat, got, ok}]
+    let state = 'sending'; // sending | feedback
+    const stats = {}, confusions = {};
+    let correct = 0, total = 0;
+
+    const meter = h('div', { class: 'p-meter' });
+    const barFill = h('div', { class: 'bar-fill' });
+    const stage = h('div', { class: 'p-stage send-stage' });
+    const actions = h('div', { class: 'p-actions' });
+
+    const box = h('div', { class: 'practice send-practice' },
+      h('div', { class: 'p-top' },
+        h('button', { class: 'btn ghost small', onclick: () => finish(false) }, '✕ Quit'),
+        h('div', { class: 'p-title' }, 'Send · ' + (st.sendWpm || 12) + ' WPM'),
+        meter),
+      h('div', { class: 'bar' }, barFill),
+      stage,
+      actions);
+    box.addEventListener('mousedown', (e) => { if (e.target.closest('button')) e.preventDefault(); });
+    root.append(box);
+
+    // Live elements updated during keying
+    let patBox = null, decBox = null, holdFill = null, holdTag = null, padBtn = null;
+
+    function updateHeader() {
+      const n = Math.min(totalGroups, state === 'feedback' ? groupsDone : groupsDone + 1);
+      meter.textContent = 'Group ' + n + '/' + totalGroups;
+      barFill.style.width = Math.round(100 * groupsDone / totalGroups) + '%';
+    }
+
+    function startGroup() {
+      targetGroup = pickGroup(chars, size);
+      idx = 0;
+      curPat = '';
+      groupResults = [];
+      state = 'sending';
+      render();
+    }
+
+    function updateLive() {
+      if (!patBox) return;
+      patBox.innerHTML = '';
+      if (!curPat) {
+        patBox.append(h('span', { class: 'muted small' }, isDown ? 'Holding…' : 'Tap or hold key below'));
+      } else {
+        curPat.split('').forEach((e) => patBox.append(h('i', { class: e === '.' ? 'dot' : 'dash' })));
+      }
+      const decoded = curPat ? (MT.DECODE[curPat] || '?') : '';
+      decBox.textContent = decoded ? '→ ' + decoded : '';
+      decBox.className = 'send-decoded' + (decoded === targetGroup[idx] ? ' good' : decoded === '?' ? ' bad' : '');
+    }
+
+    function render() {
+      clearTimeout(commitTimer);
+      stage.innerHTML = '';
+      actions.innerHTML = '';
+      patBox = null; decBox = null; holdFill = null; holdTag = null; padBtn = null;
+      updateHeader();
+
+      const grpLen = targetGroup.length || size;
+      if (state === 'sending') {
+        const targetCh = targetGroup[idx];
+        const slots = h('div', { class: 'slots' });
+        for (let i = 0; i < grpLen; i++) {
+          const r = groupResults[i];
+          const cls = i === idx ? ' active' : r ? (r.ok ? ' ok' : ' bad') : '';
+          slots.append(h('div', { class: 'slot' + cls }, targetGroup[i]));
+        }
+
+        const promptCard = h('div', { class: 'send-prompt' },
+          h('div', { class: 'send-ch' }, targetCh),
+          st.sendHints ? h('div', { class: 'send-hint' }, UI.pattern(targetCh), h('small', { class: 'muted' }, MT.say(MT.CODE[targetCh]))) : null);
+
+        patBox = h('div', { class: 'pattern send-pat' });
+        decBox = h('div', { class: 'send-decoded' });
+        const liveRow = h('div', { class: 'send-live' }, patBox, decBox);
+
+        holdFill = h('div', { class: 'hold-fill' });
+        holdTag = h('span', { class: 'muted small' }, 'dit < ' + Math.round(th.dashMs) + ' ms ≤ dah');
+        const splitPct = Math.round((th.dashMs / th.maxBarMs) * 100);
+        const holdMeter = h('div', { class: 'send-meter' },
+          h('div', { class: 'hold-bar' },
+            holdFill,
+            h('i', { class: 'hold-split', style: 'left:' + splitPct + '%', title: 'dit / dah threshold' })),
+          h('div', { class: 'row between' },
+            h('small', { class: 'muted' }, '· dit'),
+            holdTag,
+            h('small', { class: 'muted' }, '− dah')));
+
+        padBtn = h('button', {
+          class: 'keyer-pad',
+          onpointerdown: (e) => { e.preventDefault(); keyDown(); },
+          onpointerup: (e) => { e.preventDefault(); keyUp(); },
+          onpointercancel: () => keyUp(),
+          onpointerleave: () => { if (isDown) keyUp(); },
+          oncontextmenu: (e) => e.preventDefault()
+        },
+          h('span', { class: 'keyer-ic' }, '📡'),
+          h('b', {}, 'TAP / HOLD'),
+          h('small', { class: 'muted' }, 'or press Spacebar'));
+
+        stage.append(slots, promptCard, liveRow, holdMeter, padBtn);
+        actions.append(
+          h('button', { class: 'btn', onclick: clearCurrent }, '⌫ Clear'),
+          h('button', { class: 'btn', onclick: () => MT.Audio.play(targetCh, { lead: 0.05 }) }, '🔊 Hear target'));
+        updateLive();
+      } else if (state === 'feedback') {
+        const okCount = groupResults.filter((r) => r.ok).length;
+        const missed = [];
+        groupResults.forEach((r) => { if (!r.ok && missed.indexOf(r.exp) < 0) missed.push(r.exp); });
+        stage.append(
+          h('div', { class: 'fb-score ' + (okCount === grpLen ? 'good' : '') },
+            okCount === grpLen ? '✓ Perfect keying!' : okCount + ' / ' + grpLen + ' keyed accurately'),
+          h('div', { class: 'fb-grid' }, groupResults.map((r) =>
+            h('div', { class: 'fb-col ' + (r.ok ? 'ok' : 'bad') },
+              h('div', { class: 'fb-exp' }, r.exp),
+              h('div', { class: 'fb-got' }, r.ok ? '✓' : (r.got || '?'))))),
+          missed.length ? h('div', { class: 'fb-missed' },
+            h('p', { class: 'muted small' }, 'Tap to hear target rhythm:'),
+            missed.map((c) => h('button', { class: 'missed', onclick: () => MT.Audio.play(c, { lead: 0.05 }) },
+              h('b', {}, c), UI.pattern(c)))) : []);
+        actions.append(
+          h('button', { class: 'btn primary', onclick: nextGroup },
+            groupsDone >= totalGroups ? 'Finish ▶' : 'Next group ▶'));
+      }
+    }
+
+    function updateHoldBar() {
+      if (!isDown || !holdFill) return;
+      const dur = performance.now() - downAt;
+      const pct = Math.min(100, Math.round((dur / th.maxBarMs) * 100));
+      holdFill.style.width = pct + '%';
+      const isDah = dur >= th.dashMs;
+      holdFill.classList.toggle('dah', isDah);
+      if (holdTag) holdTag.textContent = Math.round(dur) + ' ms → ' + (isDah ? 'dah (−)' : 'dit (·)');
+      meterRaf = requestAnimationFrame(updateHoldBar);
+    }
+
+    function keyDown(nowMs) {
+      if (state !== 'sending' || isDown) return;
+      clearTimeout(commitTimer);
+      isDown = true;
+      downAt = nowMs != null ? nowMs : performance.now();
+      if (padBtn) padBtn.classList.add('active');
+      MT.Audio.toneStart();
+      updateLive();
+      if (nowMs == null) {
+        cancelAnimationFrame(meterRaf);
+        meterRaf = requestAnimationFrame(updateHoldBar);
+      }
+    }
+
+    function keyUp(overrideDurMs) {
+      if (!isDown) return;
+      isDown = false;
+      cancelAnimationFrame(meterRaf);
+      MT.Audio.toneStop();
+      if (padBtn) padBtn.classList.remove('active');
+      const dur = overrideDurMs != null ? overrideDurMs : (performance.now() - downAt);
+      const sym = dur < th.dashMs ? '.' : '-';
+      if (curPat.length < 7) curPat += sym;
+      if (holdFill) {
+        const pct = Math.min(100, Math.round((dur / th.maxBarMs) * 100));
+        holdFill.style.width = pct + '%';
+        holdFill.classList.toggle('dah', sym === '-');
+      }
+      if (holdTag) holdTag.textContent = Math.round(dur) + ' ms → ' + (sym === '-' ? 'dah (−)' : 'dit (·)');
+      updateLive();
+      clearTimeout(commitTimer);
+      commitTimer = setTimeout(commitChar, th.commitMs);
+    }
+
+    function clearCurrent() {
+      if (state !== 'sending') return;
+      clearTimeout(commitTimer);
+      curPat = '';
+      if (holdFill) holdFill.style.width = '0%';
+      updateLive();
+    }
+
+    function commitChar() {
+      clearTimeout(commitTimer);
+      if (state !== 'sending' || !curPat) return;
+      const exp = targetGroup[idx];
+      const expPat = MT.CODE[exp];
+      const got = MT.DECODE[curPat] || null;
+      const ok = curPat === expPat;
+
+      const s = stats[exp] || (stats[exp] = { seen: 0, correct: 0 });
+      s.seen++; total++;
+      if (ok) { s.correct++; correct++; }
+      else if (got && got !== exp) {
+        const k = exp + '>' + got;
+        confusions[k] = (confusions[k] || 0) + 1;
+      }
+
+      groupResults.push({ exp: exp, sentPat: curPat, got: got, ok: ok });
+      curPat = '';
+      idx++;
+      if (idx >= targetGroup.length) {
+        groupsDone++;
+        state = 'feedback';
+      }
+      render();
+    }
+
+    function nextGroup() {
+      if (state !== 'feedback') return;
+      if (groupsDone >= totalGroups) finish(true);
+      else startGroup();
+    }
+
+    function finish(completed) {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      if (!total) { App.go('send'); return; }
+      const acc = total ? correct / total : 0;
+      const sd = sendData();
+      if (completed) sd.rounds++;
+      sd.bestAcc = Math.max(sd.bestAcc || 0, acc);
+      const result = {
+        chars: stats, confusions: confusions, groups: groupsDone, activeSec: activeSec,
+        correct: correct, total: total, accuracy: acc
+      };
+      const rec = S.recordResult(result, { srs: false });
+      let msg = completed
+        ? (acc >= 0.9 ? '🎉 Crisp keying! Try raising your sending WPM or turning off hints.' : 'Keep practising your dit/dah ratio (1 : 3).')
+        : 'Round ended early — progress saved.';
+      if (rec.newlyDone) msg += '  🔥 Daily goal reached! Streak: ' + rec.streak + '!';
+      App.go('result', {
+        title: completed ? 'Send round complete' : 'Send round saved',
+        result: result, message: msg, good: acc >= 0.9,
+        tiles: [
+          { v: groupsDone, l: 'groups' },
+          { v: correct + '/' + total, l: 'keyed ok' },
+          { v: (st.sendWpm || 12) + ' WPM', l: 'speed' }
+        ],
+        actions: [
+          { label: '▶ Another round', primary: true, fn: () => App.go('send-play') },
+          { label: 'Send menu', fn: () => App.go('send') },
+          { label: 'Home', fn: () => App.go('home') }
+        ]
+      });
+    }
+
+    function onKeyDown(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'Escape') { e.preventDefault(); finish(false); return; }
+      if (state === 'sending') {
+        if (e.key === ' ') { e.preventDefault(); if (!e.repeat) keyDown(); }
+        else if (e.key === 'Backspace') { e.preventDefault(); clearCurrent(); }
+        else if (e.key === 'Enter' && curPat) { e.preventDefault(); commitChar(); }
+      } else if (state === 'feedback') {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nextGroup(); }
+      }
+    }
+
+    function onKeyUp(e) {
+      if (e.key === ' ' && isDown) { e.preventDefault(); keyUp(); }
+    }
+
+    const ticker = setInterval(() => {
+      if (document.visibilityState === 'visible') activeSec++;
+    }, 1000);
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
+
+    function cleanup() {
+      clearInterval(ticker);
+      clearTimeout(commitTimer);
+      cancelAnimationFrame(meterRaf);
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('keyup', onKeyUp);
+      MT.Audio.stop();
+      if (MT.Send.debug && MT.Send.debug.owner === commitChar) MT.Send.debug = null;
+    }
+
+    startGroup();
+    MT.Send.debug = {
+      owner: commitChar,
+      tap(durMs) { keyDown(0); keyUp(durMs); },
+      sendPattern(pat) {
+        for (let i = 0; i < pat.length; i++) {
+          keyDown(0);
+          keyUp(pat[i] === '.' ? th.unitMs : th.unitMs * 3);
+        }
+        commitChar();
+      },
+      commit: commitChar,
+      nextGroup: nextGroup,
+      get state() {
+        return {
+          state: state, targetGroup: targetGroup, idx: idx, curPat: curPat,
+          groupsDone: groupsDone, correct: correct, total: total, th: th
+        };
+      }
+    };
+    return cleanup;
+  }, { nav: false });
+
+  MT.Send = { thresholds: thresholds, debug: null };
+
+  App.registerMode({
+    id: 'send', icon: '👆', title: 'Send with a key', screen: 'send',
+    tagline: () => {
+      const sd = sendData();
+      return sd.rounds
+        ? 'Best ' + Math.round(sd.bestAcc * 100) + '% · ' + (S.settings.sendWpm || 12) + ' WPM straight key'
+        : 'Tap dits & dahs on the paddle or Spacebar';
+    }
+  });
+})(globalThis);
+
+/* ==================== qso.js ==================== */
+/* Set 2: On-Air CW (Q-Codes, Abbreviations & Callsigns) — 15 lessons across Part A (Study) & Part B (Copy). */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+  const h = MT.h, UI = MT.UI, App = MT.App, S = MT.Store;
+  const LESSONS = MT.QSO_LESSONS;
+  const TOTAL = LESSONS.length;
+
+  function qsoData() {
+    return S.data.qso || (S.data.qso = { level: 1, highestPassed: 0, last: null });
+  }
+
+  function unlockedKoch() {
+    return MT.KOCH.slice(0, S.data.koch.level);
+  }
+
+  function allPartAItems() {
+    const out = [];
+    LESSONS.forEach((l) => { if (l.items) l.items.forEach((it) => out.push(it)); });
+    return out;
+  }
+
+  const CONTEST_POOL = ['599', '579', 'TU', 'QSL', '73', 'QRZ', 'DE', 'K'];
+  const FULL_POOL = ['CQ', 'DE', 'K', 'TU', '73', 'RST', '599', '579', 'QTH', 'QSL', 'QRM', 'QRN', 'QSB', 'QSY', 'QRS', 'QRP', 'QRZ', 'QRT', 'PSE', 'FB', 'SK', 'WX', 'ANT', 'PWR'];
+
+  function poolForLesson(lesson) {
+    if (lesson.pool) return lesson.pool;
+    if (lesson.callsignStyle === 'contest') return CONTEST_POOL;
+    if (lesson.callsignStyle === 'full') return FULL_POOL;
+    return [];
+  }
+
+  /** Characters needed on the keypad for a Part B lesson. */
+  function charsForLesson(lesson) {
+    const base = unlockedKoch().slice();
+    const pool = poolForLesson(lesson);
+    pool.forEach((tok) => {
+      for (let i = 0; i < tok.length; i++) {
+        const c = tok[i];
+        if (MT.CODE[c] && base.indexOf(c) < 0) base.push(c);
+      }
+    });
+    if (lesson.callsignStyle === 'portable' && base.indexOf('/') < 0) base.push('/');
+    return base;
+  }
+
+  /** Pick a Q-code, abbreviation, or synthesized callsign for Part B ear-copy practice. */
+  function pickPartBGroup(lesson) {
+    const kChars = unlockedKoch();
+    if (lesson.pool) {
+      const weights = lesson.pool.map((tok) => {
+        let sum = 0;
+        for (let i = 0; i < tok.length; i++) {
+          const a = S.acc(tok[i]);
+          sum += 1 + (a == null ? 1.5 : (1 - a) * 2.5);
+        }
+        return sum / tok.length;
+      });
+      return MT.pickWeighted(lesson.pool, weights);
+    }
+    const style = lesson.callsignStyle || 'us';
+    if (style === 'us' || style === 'dx' || style === 'portable') {
+      const csChars = style === 'portable' && kChars.indexOf('/') < 0 ? kChars.concat(['/']) : kChars;
+      return MT.pickCallsign(csChars, style);
+    }
+    if (style === 'contest') {
+      if (Math.random() < 0.55) return MT.pickCallsign(kChars, Math.random() < 0.4 ? 'dx' : 'us');
+      return CONTEST_POOL[Math.floor(Math.random() * CONTEST_POOL.length)];
+    }
+    // style === 'full'
+    if (Math.random() < 0.45) {
+      const st = Math.random() < 0.25 ? 'portable' : (Math.random() < 0.5 ? 'dx' : 'us');
+      const csChars = st === 'portable' && kChars.indexOf('/') < 0 ? kChars.concat(['/']) : kChars;
+      return MT.pickCallsign(csChars, st);
+    }
+    return FULL_POOL[Math.floor(Math.random() * FULL_POOL.length)];
+  }
+
+  function finishQsoLesson(lesson, result, completed, retryFn) {
+    const rec = S.recordResult(result, { srs: false });
+    const q = qsoData();
+    const pass = completed && result.accuracy * 100 >= S.settings.threshold;
+    const prevDone = S.qsoLessonsCompleted();
+    q.last = { level: lesson.id, acc: result.accuracy };
+    let message = completed ? null : 'Lesson ended early — time & progress saved, but no unlock this time.';
+    if (pass) {
+      q.highestPassed = Math.max(q.highestPassed || 0, lesson.id);
+      if (q.level === lesson.id && q.level < TOTAL) q.level++;
+      if (lesson.id === 6 && !S.qsoPartBUnlocked()) {
+        message = '🎉 Part A complete! Reach Set 1, Lesson 30 to unlock Part B live ear-copy lessons.';
+      } else if (lesson.id < TOTAL) {
+        message = '🎉 Passed Set 2, Lesson ' + lesson.id + '! Next up: ' + LESSONS[lesson.id].title + '.';
+      } else {
+        message = '🏆 You have completed all 15 On-Air CW lessons!';
+      }
+    } else if (completed) {
+      message = 'Reach ' + S.settings.threshold + '% accuracy to unlock the next Set 2 lesson.';
+    }
+    const badge = pass && lesson.id > prevDone ? S.qsoBadgeForLesson(lesson.id) : null;
+    if (badge) message += '  ' + badge.icon + ' Badge unlocked: ' + badge.title + ' (Set 2 Lesson ' + badge.lesson + ')!';
+    if (rec.newlyDone) message += '  🔥 Daily goal reached — streak: ' + rec.streak + '!';
+    S.save();
+    App.go('result', {
+      title: 'Set 2 · Lesson ' + lesson.id + ' complete',
+      result: result,
+      message: message,
+      good: pass,
+      actions: [
+        { label: pass && lesson.id < TOTAL ? 'Next lesson ›' : 'Try again', primary: true, fn: () => (pass && lesson.id < TOTAL ? App.go('qso') : retryFn()) },
+        { label: 'Set 2 menu', fn: () => App.go('qso') },
+        { label: 'Home', fn: () => App.go('home') }
+      ]
+    });
+  }
+
+  function startPartBRound(lesson) {
+    const chars = charsForLesson(lesson);
+    App.go('practice', {
+      title: 'Set 2 · Lesson ' + lesson.id,
+      intro: lesson.title + ' — ' + lesson.subtitle + ' Reach ' + S.settings.threshold + '% over ' + S.settings.groupsPerRound + ' items to advance.',
+      chars: chars,
+      groups: S.settings.groupsPerRound,
+      pickGroup: () => pickPartBGroup(lesson),
+      onQuit: () => App.go('qso'),
+      onFinish: (result, completed) => finishQsoLesson(lesson, result, completed, () => startPartBRound(lesson))
+    });
+  }
+
+  /* ------------------------------------------------ Part A Study & Quiz */
+  App.registerScreen('qso-study', (root, p) => {
+    const q = qsoData();
+    const lesson = (p && p.lesson) || LESSONS[Math.max(0, Math.min(TOTAL - 1, q.level - 1))];
+    const items = lesson.items || LESSONS[0].items;
+    const allItems = allPartAItems();
+
+    // Build 10 questions: 2 per item (1 code->meaning, 1 meaning->code)
+    const questions = [];
+    items.forEach((it) => {
+      const distractorsM = allItems.filter((x) => x.code !== it.code).sort(() => Math.random() - 0.5).slice(0, 3);
+      const optsM = [it].concat(distractorsM).sort(() => Math.random() - 0.5);
+      questions.push({
+        type: 'code-to-meaning',
+        item: it,
+        prompt: 'What does “' + it.code + '” mean on the air?',
+        options: optsM.map((o) => ({ label: o.meaning, ok: o.code === it.code, code: o.code }))
+      });
+
+      const distractorsC = allItems.filter((x) => x.code !== it.code).sort(() => Math.random() - 0.5).slice(0, 3);
+      const optsC = [it].concat(distractorsC).sort(() => Math.random() - 0.5);
+      questions.push({
+        type: 'meaning-to-code',
+        item: it,
+        prompt: 'Which CW code means: “' + it.meaning + '”?',
+        sub: it.usage,
+        options: optsC.map((o) => ({ label: o.code, ok: o.code === it.code, code: o.code }))
+      });
+    });
+
+    let qIdx = 0, correct = 0, total = 0, activeSec = 0, answered = null, finished = false;
+    const stats = {}, confusions = {};
+
+    const meter = h('div', { class: 'p-meter' });
+    const barFill = h('div', { class: 'bar-fill' });
+    const stage = h('div', { class: 'p-stage' });
+    const actions = h('div', { class: 'p-actions' });
+
+    const box = h('div', { class: 'practice' },
+      h('div', { class: 'p-top' },
+        h('button', { class: 'btn ghost small', onclick: () => finish(false) }, '✕ Quit'),
+        h('div', { class: 'p-title' }, 'Set 2 · Lesson ' + lesson.id),
+        meter),
+      h('div', { class: 'bar' }, barFill),
+      stage,
+      actions);
+    root.append(box);
+
+    function recordItemChars(code, ok) {
+      for (let i = 0; i < code.length; i++) {
+        const c = code[i];
+        if (!MT.CODE[c]) continue;
+        const s = stats[c] || (stats[c] = { seen: 0, correct: 0 });
+        s.seen++;
+        if (ok) s.correct++;
+      }
+    }
+
+    function choose(optIdx) {
+      if (answered != null || finished) return;
+      const cur = questions[qIdx];
+      const opt = cur.options[optIdx];
+      if (!opt) return;
+      answered = optIdx;
+      total++;
+      if (opt.ok) correct++;
+      recordItemChars(cur.item.code, opt.ok);
+      MT.Audio.play(cur.item.code, { lead: 0.05 });
+      renderQuestion();
+    }
+
+    function nextQ() {
+      if (answered == null) return;
+      if (qIdx + 1 >= questions.length) {
+        finish(true);
+      } else {
+        qIdx++;
+        answered = null;
+        renderQuestion();
+        const cur = questions[qIdx];
+        if (cur.type === 'code-to-meaning') {
+          MT.Audio.play(cur.item.code, { lead: 0.08 });
+        }
+      }
+    }
+
+    function renderQuestion() {
+      stage.innerHTML = '';
+      actions.innerHTML = '';
+      const cur = questions[qIdx];
+      meter.textContent = (qIdx + 1) + '/' + questions.length;
+      barFill.style.width = Math.round(100 * qIdx / questions.length) + '%';
+
+      const codePats = h('div', { class: 'row', style: 'justify-content:center;gap:10px;flex-wrap:wrap' },
+        cur.item.code.split('').map((c) => h('span', { class: 'row', style: 'gap:4px' }, h('b', {}, c), UI.pattern(c))));
+
+      stage.append(
+        h('div', { class: 'card center', style: 'width:100%' },
+          cur.type === 'code-to-meaning'
+            ? h('div', {},
+                h('div', { class: 'big-num' }, cur.item.code),
+                codePats,
+                h('p', { class: 'small muted' }, 'Example: ' + cur.item.example))
+            : h('div', {},
+                h('p', { class: 'small muted' }, cur.sub || ''),
+                answered != null ? codePats : null),
+          h('p', { style: 'margin-top:8px;font-weight:600' }, cur.prompt)),
+        h('div', { class: 'quiz-opts', style: 'width:100%' }, cur.options.map((opt, idx) => {
+          let cls = 'quiz-opt';
+          if (answered != null) {
+            if (opt.ok) cls += ' ok';
+            else if (idx === answered) cls += ' bad';
+          }
+          return h('button', {
+            class: cls,
+            onclick: () => choose(idx)
+          },
+            h('span', { class: 'quiz-k' }, String(idx + 1)),
+            h('span', { class: 'grow' }, opt.label));
+        })));
+
+      if (answered == null) {
+        actions.append(
+          h('button', { class: 'btn', onclick: () => MT.Audio.play(cur.item.code, { lead: 0.05 }) }, '🔊 Hear code'),
+          h('button', { class: 'btn', onclick: () => MT.Audio.play(cur.item.example, { lead: 0.05 }) }, '🔊 Hear example'));
+      } else {
+        actions.append(
+          h('button', { class: 'btn', onclick: () => MT.Audio.play(cur.item.example, { lead: 0.05 }) }, '🔊 Example: ' + cur.item.example),
+          h('button', { class: 'btn primary', onclick: nextQ }, qIdx + 1 >= questions.length ? 'Finish ▶' : 'Next ›'));
+      }
+    }
+
+    function finish(completed) {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      if (!total) { App.go('qso'); return; }
+      const acc = total ? correct / total : 0;
+      const result = {
+        chars: stats, confusions: confusions, groups: total,
+        activeSec: Math.max(1, activeSec),
+        correct: correct, total: total, accuracy: acc
+      };
+      finishQsoLesson(lesson, result, completed, () => App.go('qso-study', { lesson: lesson }));
+    }
+
+    function onKey(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'Escape') { e.preventDefault(); finish(false); return; }
+      if (answered == null && /^[1-4]$/.test(e.key)) {
+        e.preventDefault();
+        choose(Number(e.key) - 1);
+      } else if (answered != null && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        nextQ();
+      }
+    }
+
+    const ticker = setInterval(() => {
+      if (document.visibilityState === 'visible') activeSec++;
+    }, 1000);
+    document.addEventListener('keydown', onKey);
+
+    function cleanup() {
+      clearInterval(ticker);
+      document.removeEventListener('keydown', onKey);
+      MT.Audio.stop();
+      if (MT.QSO.debug && MT.QSO.debug.owner === choose) MT.QSO.debug = null;
+    }
+
+    renderQuestion();
+    MT.Audio.play(questions[0].item.code, { lead: 0.1 });
+
+    MT.QSO.debug = {
+      owner: choose,
+      choose: choose,
+      next: nextQ,
+      answerCurrentCorrectly() {
+        const cur = questions[qIdx];
+        const okIdx = cur.options.findIndex((o) => o.ok);
+        choose(okIdx);
+      },
+      addActiveSec(s) { activeSec += s; },
+      get state() {
+        return { qIdx: qIdx, totalQuestions: questions.length, correct: correct, total: total, activeSec: activeSec, question: questions[qIdx] };
+      }
+    };
+    return cleanup;
+  }, { nav: false });
+
+  /* --------------------------------------------------------- Set 2 Hub */
+  App.registerScreen('qso', (root) => {
+    const q = qsoData();
+    if (!q.level || q.level < 1) q.level = 1;
+    if (q.level > TOTAL) q.level = TOTAL;
+    const lesson = LESSONS[q.level - 1];
+    const partAOk = S.qsoPartAUnlocked();
+    const partBOk = S.qsoPartBUnlocked();
+    const isPartA = lesson.part === 'A';
+    const maxStartable = Math.min(TOTAL, (q.highestPassed || 0) + 1);
+    const inSequence = lesson.id <= maxStartable;
+    const canStart = (isPartA ? partAOk : partBOk) && inSequence;
+    const last = q.last && q.last.level === lesson.id ? q.last : null;
+
+    const move = (d) => {
+      const n = Math.max(1, Math.min(TOTAL, q.level + d));
+      if (n !== q.level) { q.level = n; S.save(); App.go('qso'); }
+    };
+
+    const lockBanner = !partAOk
+      ? h('section', { class: 'card lock-banner' },
+          h('b', {}, '🔒 Unlocks after Set 1, Lesson 15'),
+          h('p', { class: 'small muted' },
+            'Complete Lesson 15 in Set 1 (Koch Trainer) so you have 16 core letters under your belt before studying Q-codes and on-air abbreviations. ' +
+            'Current Set 1 progress: Lesson ' + S.lessonsCompleted() + ' / 15.'))
+      : (!isPartA && !partBOk)
+      ? h('section', { class: 'card lock-banner' },
+          h('b', {}, '🔒 Part B unlocks after Set 1, Lesson 30 & Part A'),
+          h('p', { class: 'small muted' },
+            'Part B ear-copy drills use Q, Z, numbers, and stroke (/) callsigns. Complete Set 1, Lesson 30 (' + S.lessonsCompleted() + '/30) ' +
+            'and Set 2 Part A Lessons 1–6 (' + Math.min(6, S.qsoLessonsCompleted()) + '/6) to unlock live copy rounds.'))
+      : null;
+
+    let contentCard = null;
+    if (isPartA) {
+      contentCard = h('section', { class: 'card' },
+        h('div', { class: 'row between' },
+          h('b', {}, 'Codes in this lesson'),
+          h('span', { class: 'muted small' }, 'Tap 🔊 to hear in Morse')),
+        lesson.items.map((it) =>
+          h('div', { class: 'qso-item' },
+            h('div', { class: 'qso-head' },
+              h('span', { class: 'qso-code' }, it.code),
+              h('span', { class: 'row', style: 'gap:6px' }, it.code.split('').map((c) => UI.pattern(c))),
+              h('button', { class: 'btn small', onclick: () => { MT.Audio.ensure(); MT.Audio.play(it.code, { lead: 0.05 }); } }, '🔊 Hear')),
+            h('div', { class: 'qso-meaning' }, h('b', {}, it.meaning), ' — ', it.usage),
+            h('button', {
+              class: 'btn ghost small qso-ex',
+              onclick: () => { MT.Audio.ensure(); MT.Audio.play(it.example, { lead: 0.05 }); }
+            }, '🔊 Example: ' + it.example))));
+    } else {
+      const sampleTokens = lesson.pool
+        ? lesson.pool
+        : [
+            MT.pickCallsign(unlockedKoch(), lesson.callsignStyle === 'full' ? 'us' : lesson.callsignStyle),
+            MT.pickCallsign(unlockedKoch(), lesson.callsignStyle === 'full' ? 'dx' : lesson.callsignStyle),
+            MT.pickCallsign(unlockedKoch().concat(['/']), lesson.callsignStyle === 'full' ? 'portable' : lesson.callsignStyle)
+          ];
+      contentCard = h('section', { class: 'card' },
+        h('b', {}, 'On-air copy drill'),
+        h('p', { class: 'small muted' }, 'Listen to each full Q-code, signal report, or callsign and copy it by ear. Tap any sample below to preview:'),
+        h('div', { class: 'chips' }, sampleTokens.map((tok) =>
+          h('button', { class: 'chip on', onclick: () => { MT.Audio.ensure(); MT.Audio.play(tok, { lead: 0.05 }); } },
+            h('span', { class: 'chip-ch' }, tok)))));
+    }
+
+    root.append(
+      h('header', { class: 'top' },
+        h('button', { class: 'btn ghost small', onclick: () => App.go('home') }, '‹ Home'),
+        h('div', { class: 'grow' }, h('h1', {}, 'Q-Codes & Callsigns'))),
+      UI.setSwitcher(2),
+      lockBanner,
+      h('section', { class: 'card' },
+        h('div', { class: 'row between' },
+          h('button', { class: 'btn small', onclick: () => move(-1), disabled: q.level <= 1 ? 'disabled' : null, 'aria-label': 'Previous Set 2 lesson' }, '‹'),
+          h('div', { class: 'center' },
+            h('b', { class: 'big-num' }, 'Lesson ' + lesson.id),
+            h('div', { class: 'muted small' }, 'of ' + TOTAL + ' · ' + (isPartA ? 'Part A: Meaning & Context' : 'Part B: Ear-Copy Practice'))),
+          h('button', { class: 'btn small', onclick: () => move(1), disabled: q.level >= TOTAL ? 'disabled' : null, 'aria-label': 'Next Set 2 lesson' }, '›')),
+        h('b', {}, lesson.title),
+        h('p', { class: 'muted small' }, lesson.subtitle)),
+      contentCard,
+      h('section', { class: 'card' },
+        h('div', { class: 'row between' },
+          h('b', {}, 'Goal'), h('span', { class: 'muted' }, S.settings.threshold + '% accuracy')),
+        UI.bar(last ? last.acc : 0, last && last.acc * 100 >= S.settings.threshold ? 'good' : ''),
+        h('p', { class: 'small muted' }, last
+          ? 'Last attempt: ' + Math.round(last.acc * 100) + '%'
+          : (isPartA ? '10-question audio & meaning check (counts toward your daily streak).' : S.settings.groupsPerRound + ' on-air items copied by ear.')),
+        UI.badgeStrip('qso')),
+      h('div', { class: 'stack' },
+        h('button', {
+          class: 'btn primary big',
+          disabled: canStart ? null : 'disabled',
+          onclick: () => {
+            if (!canStart) return;
+            MT.Audio.ensure();
+            if (isPartA) App.go('qso-study', { lesson: lesson });
+            else startPartBRound(lesson);
+          }
+        }, !inSequence && (isPartA ? partAOk : partBOk)
+             ? '🔒 Complete Lesson ' + maxStartable + ' first'
+             : (isPartA ? '▶ Start study & meaning quiz' : '▶ Start ear-copy round'))));
+  });
+
+  MT.QSO = { pickPartBGroup: pickPartBGroup, charsForLesson: charsForLesson, debug: null };
+
+  App.registerMode({
+    id: 'qso', icon: '📻', title: 'Q-Codes & Callsigns', screen: 'qso',
+    tagline: () => {
+      if (!S.qsoPartAUnlocked()) return 'Set 2 · Unlocks after Set 1, Lesson 15';
+      const q = qsoData();
+      const l = LESSONS[Math.max(0, Math.min(TOTAL - 1, (q.level || 1) - 1))];
+      return 'Set 2 · Lesson ' + l.id + ' (' + l.title + ')';
+    }
+  });
+})(globalThis);
+
+/* ==================== boot ==================== */
+if (/^#__script=/.test(location.hash)) {
+  const s = document.createElement('script');
+  s.src = location.hash.slice(10).split('#')[0];
+  document.head.append(s);
+} else {
+  MT.App.start();
+}
+  </script>
+</body>
+</html>
