@@ -111,7 +111,8 @@ b { font-weight: 650; }
 .modes { display: flex; flex-direction: column; gap: 0; }
 .mode { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; }
 .mode.soon { opacity: .5; }
-.mode-ic { font-size: 2rem; }
+.mode-ic { font-size: 2rem; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex-shrink: 0; }
+.mode-ic svg { width: 100%; height: 100%; display: block; }
 .mode-tx { display: flex; flex-direction: column; flex: 1; }
 .mode-tx small { color: var(--muted); }
 .chev { font-size: 1.8rem; color: var(--muted); }
@@ -262,6 +263,50 @@ b { font-weight: 650; }
 .word-chip { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .88rem; font-weight: 700; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; color: var(--text); cursor: pointer; }
 .word-chip:hover, .word-chip:focus { border-color: var(--accent); color: var(--accent); }
 
+/* Morse Tree interactive chart & practice */
+.screen-tree { overflow-x: hidden; width: 100%; box-sizing: border-box; }
+.tree-card { padding: 12px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box; max-width: 100%; width: 100%; }
+.tree-card .seg { width: 100%; box-sizing: border-box; }
+.tree-card .seg-btn { padding: 8px 4px; font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+.morse-tree-svg { width: 100%; max-width: 440px; margin: 0 auto; display: block; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; user-select: none; touch-action: manipulation; }
+.morse-tree-svg .t-hdr { fill: var(--muted); font-size: 14px; font-weight: 800; letter-spacing: .12em; }
+.morse-tree-svg .t-ant { stroke: var(--accent); stroke-width: 2.2; fill: none; stroke-linecap: round; }
+.morse-tree-svg .t-ant-dot { fill: var(--accent); }
+.morse-tree-svg .t-edge { stroke: #334155; stroke-width: 2.5; stroke-linecap: round; fill: none; transition: stroke .12s, stroke-width .12s; }
+.morse-tree-svg .t-edge.walked { stroke: var(--accent); stroke-width: 4; filter: drop-shadow(0 0 5px rgba(56, 189, 248, .55)); }
+.morse-tree-svg .t-edge.preview { stroke: var(--warn); stroke-width: 3; stroke-dasharray: 4 4; }
+.morse-tree-svg .t-node { cursor: pointer; }
+.morse-tree-svg .t-shape { fill: #475569; stroke: #64748b; stroke-width: 1.2; transition: fill .12s, stroke .12s, transform .12s; }
+.morse-tree-svg .t-label { fill: var(--text); font-size: 13.5px; font-weight: 800; font-family: system-ui, -apple-system, sans-serif; pointer-events: none; }
+.morse-tree-svg .t-node:hover .t-shape { stroke: var(--accent); }
+.morse-tree-svg .t-node.walked .t-shape { fill: var(--accent); stroke: #bae6fd; }
+.morse-tree-svg .t-node.walked .t-label { fill: var(--accent); }
+.morse-tree-svg .t-node.active .t-shape { fill: var(--accent); stroke: #fff; stroke-width: 2; filter: drop-shadow(0 0 7px rgba(56, 189, 248, .85)); }
+.morse-tree-svg .t-node.active .t-label { fill: #fff; font-size: 15px; }
+.morse-tree-svg .t-node.preview .t-shape { fill: rgba(251, 191, 36, .35); stroke: var(--warn); stroke-width: 1.8; }
+.morse-tree-svg .t-node.preview .t-label { fill: var(--warn); }
+.morse-tree-svg .t-node.committed .t-shape { fill: var(--good); stroke: #ecfdf5; stroke-width: 2.2; filter: drop-shadow(0 0 9px rgba(52, 211, 153, .9)); }
+.morse-tree-svg .t-node.committed .t-label { fill: var(--good); }
+.morse-tree-svg .t-node.bad .t-shape { fill: var(--bad); stroke: #fef2f2; stroke-width: 2; }
+.morse-tree-svg .t-node.bad .t-label { fill: var(--bad); }
+.morse-tree-svg .t-node.target-node .t-shape { stroke: var(--accent); stroke-width: 2; fill: #1e3a5f; }
+.morse-tree-svg .t-node.target-node .t-label { fill: var(--accent); font-weight: 800; font-size: 14.5px; }
+.morse-tree-svg .t-node.target-hint .t-shape { stroke: var(--warn); stroke-width: 2.2; }
+.morse-tree-svg .t-cursor { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-dasharray: 3 3; pointer-events: none; transition: transform .12s ease-out; }
+.morse-tree-svg .t-cursor.committed { stroke: var(--good); stroke-dasharray: none; stroke-width: 2.8; }
+.morse-tree-svg .t-cursor.bad { stroke: var(--bad); stroke-dasharray: none; }
+
+.tree-live-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; min-height: 48px; flex-wrap: wrap; box-sizing: border-box; }
+.tree-live-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.tree-live-land { font-size: 1.55rem; font-weight: 800; color: var(--accent); min-width: 30px; text-align: center; line-height: 1; }
+.tree-live-land.good { color: var(--good); }
+.tree-live-land.bad { color: var(--bad); }
+.tree-tape { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 1rem; font-weight: 700; letter-spacing: .12em; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-height: 38px; display: flex; align-items: center; justify-content: space-between; gap: 8px; word-break: break-all; box-sizing: border-box; width: 100%; }
+.tree-pad-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; box-sizing: border-box; }
+.tree-pad-two .keyer-pad { min-height: 96px; padding: 12px 8px; }
+.tree-target-box { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: rgba(56, 189, 248, .08); border: 1px solid var(--accent); border-radius: 12px; padding: 8px 10px; flex-wrap: wrap; box-sizing: border-box; }
+.tree-target-ch { font-size: 1.7rem; font-weight: 800; color: var(--accent); line-height: 1; }
+
 .fb-score { text-align: center; font-size: 1.4rem; font-weight: 700; }
 .fb-score.good { color: var(--good); }
 .fb-grid { display: flex; justify-content: center; gap: 8px; }
@@ -369,7 +414,9 @@ b { font-weight: 650; }
     Y: '-.--', Z: '--..',
     '0': '-----', '1': '.----', '2': '..---', '3': '...--', '4': '....-',
     '5': '.....', '6': '-....', '7': '--...', '8': '---..', '9': '----.',
-    '.': '.-.-.-', ',': '--..--', '?': '..--..', '/': '-..-.'
+    '.': '.-.-.-', ',': '--..--', '?': '..--..', '/': '-..-.',
+    '=': '-...-',  '@': '.--.-.', '+': '.-.-.',  '-': '-....-',
+    "'": '.----.', ':': '---...', '"': '.-..-.', '(': '-.--.-'
   };
 
   MT.DECODE = {};
@@ -710,7 +757,9 @@ b { font-weight: 650; }
       groupSize: 5, groupsPerRound: 10, goalMin: 5, threshold: 90,
       arcadeHints: false, sendWpm: 12, sendHints: true,
       inputMode: 'auto', keyOrder: 'koch', haptics: true,
-      practiceType: 'random'   // 'random' | 'words' | 'callsigns' (Words/Callsigns unlock after Lesson 20)
+      practiceType: 'random',  // 'random' | 'words' | 'callsigns' (Words/Callsigns unlock after Lesson 20)
+      treeInput: 'single',     // 'single' (press/hold) | 'two' (· Dit / − Dah buttons)
+      treeSet: 'abc'           // 'abc' | 'num' | 'punct' (Morse Tree active tab)
     },
     koch: { level: 2, introduced: 0, highestPassed: 0, last: null },
     qso: { level: 1, highestPassed: 0, last: null },
@@ -1868,15 +1917,18 @@ b { font-weight: 650; }
         today.done ? h('p', { class: 'small good-text' }, '✓ Daily goal reached — nice work!')
                    : h('p', { class: 'small muted' }, 'Practise ' + S.settings.goalMin + ' minutes a day to build your streak.'),
         UI.badgeStrip()),
-      h('div', { class: 'modes' }, App.modes.map((m) =>
-        h('button', {
+      h('div', { class: 'modes' }, App.modes.map((m) => {
+        const ic = typeof m.icon === 'function' ? m.icon() : m.icon;
+        return h('button', {
           class: 'card mode' + (m.soon ? ' soon' : ''),
           disabled: m.soon ? 'disabled' : null,
           onclick: () => { MT.Audio.ensure(); App.go(m.screen); }
         },
-          h('span', { class: 'mode-ic' }, m.icon),
+          h('span', { class: 'mode-ic' }, ic),
           h('span', { class: 'mode-tx' }, h('b', {}, m.title), h('small', {}, m.soon ? 'Coming soon' : m.tagline())),
-          m.soon ? null : h('span', { class: 'chev' }, '›')))));
+          m.soon ? null : h('span', { class: 'chev' }, '›'));
+      }))
+    );
     const extras = [
       App.installEvent ? h('button', {
         class: 'btn ghost install',
@@ -2239,6 +2291,13 @@ b { font-weight: 650; }
         ], {
           koch: 'Keys stay in the order you unlocked them so existing buttons never jump around when a new letter is added.',
           alpha: 'Sorts unlocked letters A–Z, then numbers 0–9, then punctuation.'
+        }),
+        segSelect('Morse Tree input', 'treeInput', [
+          { id: 'single', label: 'Single button (Press / Hold)' },
+          { id: 'two', label: '2-Button (· Dit / − Dah)' }
+        ], {
+          single: 'Press and hold a single straight key (tap = dit ·, hold = dah −) to walk down the Morse tree.',
+          two: 'Tap dedicated · Dit and − Dah paddle buttons to step through the Morse tree.'
         }),
         slider('Characters per group', 'groupSize', 3, 8, 1, (v) => v),
         slider('Groups per Koch round', 'groupsPerRound', 5, 20, 1, (v) => v),
@@ -3629,10 +3688,965 @@ b { font-weight: 650; }
   });
 })(globalThis);
 
+/* ==================== tree.js ==================== */
+/* Interactive Morse Code Tree practice: real-time traversal, single-button vs 2-button toggle,
+   auto-commit after pause, and separate Numbers & Punctuation reference/practice panels. */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+  const h = MT.h, UI = MT.UI, App = MT.App, S = MT.Store;
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  function svgEl(tag, attrs, children) {
+    const el = document.createElementNS(SVG_NS, tag);
+    if (attrs) {
+      for (const k in attrs) {
+        if (attrs[k] != null) el.setAttribute(k, String(attrs[k]));
+      }
+    }
+    if (children) {
+      children.forEach((c) => {
+        if (c == null) return;
+        el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+      });
+    }
+    return el;
+  }
+
+  /**
+   * Exact 26-letter keychain diagram geometry (viewBox 0 0 420 400).
+   * Root antenna at (200, 56).
+   * Left spine = Dahs (T, M, O), Right spine = Dits (E, I, S, H).
+   * Node shapes match the physical chart:
+   *  - 'circle' = Dit (·)
+   *  - 'hbar'   = Horizontal Dah (−)
+   *  - 'vbar'   = Vertical Dah (|)
+   */
+  const LAYOUT = [
+    // Top Horizontal Spine (y = 56)
+    { ch: 'T', pat: '-',    parent: '',    x: 152, y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: true },
+    { ch: 'M', pat: '--',   parent: '-',   x: 100, y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: true },
+    { ch: 'O', pat: '---',  parent: '--',  x: 48,  y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: true },
+    { ch: 'E', pat: '.',    parent: '',    x: 248, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: true },
+    { ch: 'I', pat: '..',   parent: '.',   x: 294, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: true },
+    { ch: 'S', pat: '...',  parent: '..',  x: 340, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: true },
+    { ch: 'H', pat: '....', parent: '...', x: 382, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: true },
+
+    // Branches under M (x = 100)
+    { ch: 'G', pat: '--.',  parent: '--',  x: 100, y: 114, shape: 'circle', lx: 18,  ly: 5,   isTarget: true },
+    { ch: 'Q', pat: '--.-', parent: '--.', x: 48,  y: 114, shape: 'hbar',   lx: 0,   ly: -16, isTarget: true },
+    { ch: 'Z', pat: '--..', parent: '--.', x: 100, y: 164, shape: 'circle', lx: 18,  ly: 5,   isTarget: true },
+
+    // Branches under I (x = 294) & S (x = 340)
+    { ch: 'U', pat: '..-',  parent: '..',  x: 294, y: 114, shape: 'vbar',   lx: -18, ly: 5,   isTarget: true },
+    { ch: 'F', pat: '..-.', parent: '..-', x: 294, y: 164, shape: 'circle', lx: -18, ly: 5,   isTarget: true },
+    { ch: 'V', pat: '...-', parent: '...', x: 340, y: 114, shape: 'vbar',   lx: 18,  ly: 5,   isTarget: true },
+
+    // Branches under T (x = 152)
+    { ch: 'N', pat: '-.',   parent: '-',   x: 152, y: 214, shape: 'circle', lx: 18,  ly: 5,   isTarget: true },
+    { ch: 'K', pat: '-.-',  parent: '-.',  x: 100, y: 214, shape: 'hbar',   lx: 0,   ly: -16, isTarget: true },
+    { ch: 'Y', pat: '-.--', parent: '-.-', x: 48,  y: 214, shape: 'hbar',   lx: 0,   ly: -16, isTarget: true },
+    { ch: 'C', pat: '-.-.', parent: '-.-', x: 100, y: 266, shape: 'circle', lx: -18, ly: 5,   isTarget: true },
+    { ch: 'D', pat: '-..',  parent: '-.',  x: 152, y: 318, shape: 'circle', lx: 18,  ly: 5,   isTarget: true },
+    { ch: 'X', pat: '-..-', parent: '-..', x: 100, y: 318, shape: 'hbar',   lx: 0,   ly: -16, isTarget: true },
+    { ch: 'B', pat: '-...', parent: '-..', x: 152, y: 368, shape: 'circle', lx: 18,  ly: 5,   isTarget: true },
+
+    // Branches under E (x = 248)
+    { ch: 'A', pat: '.-',   parent: '.',   x: 248, y: 214, shape: 'vbar',   lx: -18, ly: 5,   isTarget: true },
+    { ch: 'R', pat: '.-.',  parent: '.-',  x: 294, y: 214, shape: 'circle', lx: 0,   ly: -16, isTarget: true },
+    { ch: 'L', pat: '.-..', parent: '.-.', x: 340, y: 214, shape: 'circle', lx: 18,  ly: 5,   isTarget: true },
+    { ch: 'W', pat: '.--',  parent: '.-',  x: 248, y: 318, shape: 'vbar',   lx: -18, ly: 5,   isTarget: true },
+    { ch: 'P', pat: '.--.', parent: '.--', x: 294, y: 318, shape: 'circle', lx: 18,  ly: 5,   isTarget: true },
+    { ch: 'J', pat: '.---', parent: '.--', x: 248, y: 368, shape: 'vbar',   lx: -18, ly: 5,   isTarget: true }
+  ];
+
+  const NUM_LAYOUT = [
+    // Top Dah Spine (y = 56, x descends left from root 210)
+    { ch: 'T', pat: '-',     parent: '',     x: 166, y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
+    { ch: 'M', pat: '--',    parent: '-',    x: 124, y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
+    { ch: 'O', pat: '---',   parent: '--',   x: 82,  y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
+    { ch: '',  pat: '----',  parent: '---',  x: 44,  y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
+    { ch: '0', pat: '-----', parent: '----', x: 18,  y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: true },
+
+    // Left Dit Descendents under T (x = 166)
+    { ch: 'N', pat: '-.',    parent: '-',    x: 166, y: 122, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
+    { ch: 'D', pat: '-..',   parent: '-.',   x: 166, y: 188, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
+    { ch: 'B', pat: '-...',  parent: '-..',  x: 166, y: 254, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
+    { ch: '6', pat: '-....', parent: '-...', x: 166, y: 320, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+
+    // Left Dit Descendents under M (x = 124)
+    { ch: 'G', pat: '--.',   parent: '--',   x: 124, y: 122, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
+    { ch: 'Z', pat: '--..',  parent: '--.',  x: 124, y: 188, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
+    { ch: '7', pat: '--...', parent: '--..', x: 124, y: 254, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+
+    // Left Dit Descendents under O (x = 82)
+    { ch: '',  pat: '---.',  parent: '---',  x: 82,  y: 122, shape: 'circle', lx: 0,   ly: 18,  isTarget: false },
+    { ch: '8', pat: '---..', parent: '---.', x: 82,  y: 188, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+
+    // Left Dit Descendents under '----' (x = 44)
+    { ch: '9', pat: '----.', parent: '----', x: 44,  y: 122, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+
+    // Top Dit Spine (y = 56, x ascends right from root 210)
+    { ch: 'E', pat: '.',     parent: '',     x: 254, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: false },
+    { ch: 'I', pat: '..',    parent: '.',    x: 296, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: false },
+    { ch: 'S', pat: '...',   parent: '..',   x: 338, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: false },
+    { ch: 'H', pat: '....',  parent: '...',  x: 376, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: false },
+    { ch: '5', pat: '.....', parent: '....', x: 402, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: true },
+
+    // Right Dah Descendents under E (x = 254)
+    { ch: 'A', pat: '.-',    parent: '.',    x: 254, y: 122, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
+    { ch: 'W', pat: '.--',   parent: '.-',   x: 254, y: 188, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
+    { ch: 'J', pat: '.---',  parent: '.--',  x: 254, y: 254, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
+    { ch: '1', pat: '.----', parent: '.---', x: 254, y: 320, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: true },
+
+    // Right Dah Descendents under I (x = 296)
+    { ch: 'U', pat: '..-',   parent: '..',   x: 296, y: 122, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
+    { ch: '',  pat: '..--',  parent: '..-',  x: 296, y: 188, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: false },
+    { ch: '2', pat: '..---', parent: '..--', x: 296, y: 254, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: true },
+
+    // Right Dah Descendents under S (x = 338)
+    { ch: 'V', pat: '...-',  parent: '...',  x: 338, y: 122, shape: 'vbar',   lx: 16,  ly: 5,   isTarget: false },
+    { ch: '3', pat: '...--', parent: '...-', x: 338, y: 188, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: true },
+
+    // Right Dah Descendents under H (x = 376)
+    { ch: '4', pat: '....-', parent: '....', x: 376, y: 122, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: true }
+  ];
+
+  const PUNCT_LAYOUT = [
+    // Top Dah Spine (y = 56, x descends left from root 210)
+    { ch: 'T', pat: '-',      parent: '',      x: 155, y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
+    { ch: 'M', pat: '--',     parent: '-',     x: 95,  y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
+    { ch: 'O', pat: '---',    parent: '--',    x: 35,  y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
+
+    // Branch under O (x = 35)
+    { ch: '',  pat: '---.',   parent: '---',   x: 35,  y: 120, shape: 'circle', lx: 0,   ly: 18,  isTarget: false },
+    { ch: '',  pat: '---..',  parent: '---.',  x: 35,  y: 185, shape: 'circle', lx: 0,   ly: 18,  isTarget: false },
+    { ch: ':', pat: '---...', parent: '---..', x: 35,  y: 255, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+
+    // Branch under M (x = 95)
+    { ch: 'G', pat: '--.',    parent: '--',    x: 95,  y: 120, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
+    { ch: 'Z', pat: '--..',   parent: '--.',   x: 95,  y: 185, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
+    { ch: '',  pat: '--..-',  parent: '--..',  x: 95,  y: 255, shape: 'hbar',   lx: 0,   ly: 18,  isTarget: false },
+    { ch: ',', pat: '--..--', parent: '--..-', x: 95,  y: 325, shape: 'hbar',   lx: 0,   ly: 18,  isTarget: true },
+
+    // Branch under T (x = 155) -> N
+    { ch: 'N', pat: '-.',     parent: '-',     x: 155, y: 120, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
+
+    // Under N -> Dah to K, Y, (
+    { ch: 'K', pat: '-.-',    parent: '-.',    x: 125, y: 120, shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
+    { ch: 'Y', pat: '-.--',   parent: '-.-',   x: 65,  y: 120, shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
+    { ch: '',  pat: '-.--.',  parent: '-.--',  x: 65,  y: 185, shape: 'circle', lx: 0,   ly: 18,  isTarget: false },
+    { ch: '(', pat: '-.--.-', parent: '-.--.', x: 65,  y: 255, shape: 'hbar',   lx: 0,   ly: 18,  isTarget: true },
+
+    // Under N -> Dit to D
+    { ch: 'D', pat: '-..',    parent: '-.',    x: 155, y: 185, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
+    { ch: 'X', pat: '-..-',   parent: '-..',   x: 125, y: 185, shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
+    { ch: '/', pat: '-..-.',  parent: '-..-',  x: 125, y: 255, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+
+    // Under D -> Dit to B
+    { ch: 'B', pat: '-...',   parent: '-..',   x: 155, y: 255, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
+    { ch: '=', pat: '-...-',  parent: '-...',  x: 125, y: 325, shape: 'hbar',   lx: 0,   ly: 18,  isTarget: true },
+    { ch: '',  pat: '-....',  parent: '-...',  x: 155, y: 325, shape: 'circle', lx: 0,   ly: 18,  isTarget: false },
+    { ch: '-', pat: '-....-', parent: '-....', x: 65,  y: 325, shape: 'hbar',   lx: 0,   ly: 18,  isTarget: true },
+
+    // Top Dit Spine (y = 56, x ascends right from root 210)
+    { ch: 'E', pat: '.',      parent: '',      x: 265, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: false },
+    { ch: 'I', pat: '..',     parent: '.',     x: 345, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: false },
+
+    // Under I (x = 345) -> U, ?, ..
+    { ch: 'U', pat: '..-',    parent: '..',    x: 345, y: 120, shape: 'vbar',   lx: 16,  ly: 5,   isTarget: false },
+    { ch: '',  pat: '..--',   parent: '..-',   x: 345, y: 185, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: false },
+    { ch: '',  pat: '..--.',  parent: '..--',  x: 345, y: 255, shape: 'circle', lx: 0,   ly: 18,  isTarget: false },
+    { ch: '?', pat: '..--..', parent: '..--.', x: 345, y: 325, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+
+    // Under E (x = 265) -> A
+    { ch: 'A', pat: '.-',     parent: '.',     x: 265, y: 120, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
+
+    // Under A -> R -> L, ", +, .
+    { ch: 'R', pat: '.-.',    parent: '.-',    x: 305, y: 120, shape: 'circle', lx: 0,   ly: -16, isTarget: false },
+    { ch: 'L', pat: '.-..',   parent: '.-.',   x: 385, y: 120, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
+    { ch: '',  pat: '.-..-',  parent: '.-..',  x: 385, y: 185, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: false },
+    { ch: '"', pat: '.-..-.', parent: '.-..-', x: 385, y: 255, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+
+    { ch: '',  pat: '.-.-',   parent: '.-.',   x: 305, y: 185, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: false },
+    { ch: '+', pat: '.-.-.',  parent: '.-.-',  x: 305, y: 255, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+    { ch: '.', pat: '.-.-.-', parent: '.-.-.', x: 305, y: 325, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+
+    // Under A -> W -> P, @, J, 1, '
+    { ch: 'W', pat: '.--',    parent: '.-',    x: 265, y: 185, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
+    { ch: 'P', pat: '.--.',   parent: '.--',   x: 285, y: 185, shape: 'circle', lx: 0,   ly: -16, isTarget: false },
+    { ch: '',  pat: '.--.-',  parent: '.--.',  x: 285, y: 255, shape: 'hbar',   lx: 0,   ly: 18,  isTarget: false },
+    { ch: '@', pat: '.--.-.', parent: '.--.-', x: 285, y: 325, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+
+    { ch: 'J', pat: '.---',   parent: '.--',   x: 265, y: 255, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
+    { ch: '1', pat: '.----',  parent: '.---',  x: 265, y: 325, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
+    { ch: "'", pat: '.----.', parent: '.----', x: 265, y: 375, shape: 'circle', lx: 0,   ly: 18,  isTarget: true }
+  ];
+
+  const TREE_SETS = {
+    abc: {
+      id: 'abc',
+      title: 'ABC',
+      viewBox: '0 0 420 400',
+      root: { x: 200, y: 56 },
+      hdrLeft: 'MORSE',
+      hdrRight: 'CODE',
+      nodes: LAYOUT,
+      targets: LAYOUT.map((n) => n.ch)
+    },
+    num: {
+      id: 'num',
+      title: '123',
+      viewBox: '0 0 420 370',
+      root: { x: 210, y: 56 },
+      hdrLeft: 'MORSE',
+      hdrRight: 'NUMBERS',
+      nodes: NUM_LAYOUT,
+      targets: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    },
+    punct: {
+      id: 'punct',
+      title: '.,?/',
+      viewBox: '0 0 420 400',
+      root: { x: 210, y: 56 },
+      hdrLeft: 'MORSE',
+      hdrRight: 'PUNCTUATION',
+      nodes: PUNCT_LAYOUT,
+      targets: ['.', ',', '?', '/', '=', '@', '+', '-', "'", ':', '"', '(']
+    }
+  };
+
+  ['abc', 'num', 'punct'].forEach((k) => {
+    const set = TREE_SETS[k];
+    set.byPat = {};
+    set.byCh = {};
+    set.nodes.forEach((n) => {
+      set.byPat[n.pat] = n;
+      if (n.ch) set.byCh[n.ch] = n;
+    });
+  });
+
+  MT.TREE_LAYOUT = LAYOUT;
+  MT.TREE_SETS = TREE_SETS;
+
+  function thresholds(wpm) {
+    const unitMs = (1.2 / (wpm || 12)) * 1000;
+    return {
+      unitMs: unitMs,
+      dashMs: unitMs * 2.0,
+      commitMs: unitMs * 2.6,
+      maxBarMs: unitMs * 4.5
+    };
+  }
+
+  App.registerScreen('tree', (root) => {
+    const st = S.settings;
+    if (!st.sendWpm) st.sendWpm = 12;
+    if (!st.treeInput) st.treeInput = 'single';
+    if (!st.treeSet || !TREE_SETS[st.treeSet]) st.treeSet = 'abc';
+
+    let curPat = '';
+    let previewSym = ''; // '.' | '-' while holding single button
+    let committedPat = '';
+    let commitOutcome = ''; // 'good' | 'bad' | ''
+    let isDown = false, downAt = 0;
+    let commitTimer = null, resetTimer = null, traceTimers = [], meterRaf = 0;
+    let activeSec = 0, groupsDone = 0;
+    const sessionStats = {};
+    let subMode = 'free'; // 'free' | 'target' | 'ear'
+    let targetCh = (TREE_SETS[st.treeSet] || TREE_SETS.abc).targets[0];
+    let tape = '';
+
+    function flushStreakTime() {
+      if (activeSec > 0 || groupsDone > 0) {
+        S.recordResult({ chars: sessionStats, groups: groupsDone, activeSec: activeSec }, { srs: false });
+        activeSec = 0;
+        groupsDone = 0;
+        for (const k in sessionStats) delete sessionStats[k];
+      }
+    }
+
+    function clearTraceTimers() {
+      while (traceTimers.length) clearTimeout(traceTimers.pop());
+    }
+
+    // ---- Build SVG Tree
+    const svgContainer = h('div', { class: 'tree-svg-container' });
+    let edgeByPat = {};
+    let nodeByPat = {};
+    let cursorRing = null;
+
+    function renderTreeSvg() {
+      svgContainer.innerHTML = '';
+      edgeByPat = {};
+      nodeByPat = {};
+
+      const activeTree = TREE_SETS[st.treeSet] || TREE_SETS.abc;
+      const edgesGroup = svgEl('g', { class: 't-edges' });
+      const nodesGroup = svgEl('g', { class: 't-nodes' });
+
+      activeTree.nodes.forEach((n) => {
+        const p = n.parent ? activeTree.byPat[n.parent] : activeTree.root;
+        const line = svgEl('line', {
+          class: 't-edge',
+          'data-edge': n.pat,
+          x1: p.x, y1: p.y, x2: n.x, y2: n.y
+        });
+        edgeByPat[n.pat] = line;
+        edgesGroup.appendChild(line);
+      });
+
+      activeTree.nodes.forEach((n) => {
+        let shapeEl;
+        const isTarget = !!n.isTarget;
+        if (n.shape === 'circle') {
+          shapeEl = svgEl('circle', { class: 't-shape', cx: n.x, cy: n.y, r: isTarget ? 8.5 : 7 });
+        } else if (n.shape === 'hbar') {
+          const w = isTarget ? 26 : 22, h = isTarget ? 10 : 8.5;
+          shapeEl = svgEl('rect', { class: 't-shape', x: n.x - w / 2, y: n.y - h / 2, width: w, height: h, rx: 3 });
+        } else {
+          const w = isTarget ? 10 : 8.5, h = isTarget ? 26 : 22;
+          shapeEl = svgEl('rect', { class: 't-shape', x: n.x - w / 2, y: n.y - h / 2, width: w, height: h, rx: 3 });
+        }
+
+        const children = [shapeEl];
+        if (n.ch) {
+          const labelEl = svgEl('text', {
+            class: 't-label' + (isTarget ? ' target-label' : ''),
+            x: n.x + (n.lx || 0),
+            y: n.y + (n.ly || 0),
+            'text-anchor': 'middle'
+          }, [n.ch]);
+          children.push(labelEl);
+        }
+
+        const gNode = svgEl('g', {
+          class: 't-node' + (isTarget ? ' target-node' : ''),
+          'data-ch': n.ch || '',
+          'data-pat': n.pat
+        }, children);
+
+        if (n.ch) {
+          gNode.addEventListener('click', () => traceCharacter(n.ch));
+        }
+        nodeByPat[n.pat] = gNode;
+        nodesGroup.appendChild(gNode);
+      });
+
+      const ax = activeTree.root.x, ay = activeTree.root.y;
+      const antennaGroup = svgEl('g', { class: 't-root', style: 'cursor:pointer' }, [
+        svgEl('line', { class: 't-ant', x1: ax, y1: ay, x2: ax, y2: ay - 34 }),
+        svgEl('circle', { class: 't-ant-dot', cx: ax, cy: ay - 36, r: 3.2 }),
+        svgEl('path', { class: 't-ant', d: 'M ' + (ax - 9) + ' ' + (ay - 42) + ' A 11 11 0 0 0 ' + (ax - 9) + ' ' + (ay - 29) }),
+        svgEl('path', { class: 't-ant', d: 'M ' + (ax + 9) + ' ' + (ay - 42) + ' A 11 11 0 0 1 ' + (ax + 9) + ' ' + (ay - 29) }),
+        svgEl('path', { class: 't-ant', d: 'M ' + (ax - 15) + ' ' + (ay - 47) + ' A 18 18 0 0 0 ' + (ax - 15) + ' ' + (ay - 24) }),
+        svgEl('path', { class: 't-ant', d: 'M ' + (ax + 15) + ' ' + (ay - 47) + ' A 18 18 0 0 1 ' + (ax + 15) + ' ' + (ay - 24) }),
+        svgEl('circle', { class: 't-ant-dot', cx: ax, cy: ay, r: 4.5 })
+      ]);
+      antennaGroup.addEventListener('click', () => clearCurrent());
+
+      cursorRing = svgEl('circle', {
+        class: 't-cursor',
+        cx: 0, cy: 0, r: 16,
+        transform: 'translate(' + activeTree.root.x + ',' + activeTree.root.y + ')'
+      });
+
+      const svg = svgEl('svg', {
+        class: 'morse-tree-svg',
+        viewBox: activeTree.viewBox,
+        role: 'img',
+        'aria-label': 'Interactive Morse Code Tree - ' + activeTree.title
+      }, [
+        svgEl('text', { class: 't-hdr', x: 36, y: 26 }, [activeTree.hdrLeft]),
+        svgEl('text', { class: 't-hdr', x: 384, y: 26, 'text-anchor': 'end' }, [activeTree.hdrRight]),
+        edgesGroup,
+        antennaGroup,
+        nodesGroup,
+        cursorRing
+      ]);
+
+      svgContainer.appendChild(svg);
+    }
+
+    // ---- Live status bar, target drill prompt, and decoded tape
+    const patBox = h('div', { class: 'pattern' });
+    const sayBox = h('small', { class: 'muted' });
+    const landBox = h('div', { class: 'tree-live-land' }, '📡');
+    const liveBar = h('div', { class: 'tree-live-bar' },
+      h('div', { class: 'tree-live-left' }, patBox, sayBox),
+      h('div', { class: 'row' },
+        landBox,
+        h('button', { class: 'btn small', onclick: () => clearCurrent() }, '⌫ Reset')));
+
+    const tapeText = h('span', {}, '');
+    const tapeBox = h('div', { class: 'tree-tape' },
+      tapeText,
+      h('button', { class: 'btn ghost small', onclick: () => { tape = ''; updateVisuals(); } }, 'Clear tape'));
+
+    const targetBox = h('div', { class: 'tree-target-box', style: 'display:none' });
+
+    function pickNextTarget() {
+      const activeTree = TREE_SETS[st.treeSet] || TREE_SETS.abc;
+      const targets = activeTree.targets;
+      let next = targetCh;
+      if (targets.length === 1) next = targets[0];
+      else {
+        let attempts = 0;
+        while ((next === targetCh || !next) && attempts++ < 20) {
+          const idx = Math.floor(Math.random() * targets.length);
+          next = targets[idx];
+        }
+      }
+      targetCh = next || targets[0];
+      renderTargetBox();
+      updateVisuals();
+      if (subMode === 'ear') {
+        MT.Audio.ensure();
+        MT.Audio.play(targetCh, { lead: 0.08 });
+      }
+    }
+
+    function renderTargetBox() {
+      targetBox.innerHTML = '';
+      if (subMode === 'free') {
+        targetBox.style.display = 'none';
+        return;
+      }
+      targetBox.style.display = 'flex';
+      if (subMode === 'target') {
+        targetBox.append(
+          h('div', {},
+            h('div', { class: 'muted small' }, 'Key this character down the tree:'),
+            h('div', { class: 'row' },
+              h('span', { class: 'tree-target-ch' }, targetCh),
+              UI.pattern(targetCh),
+              h('small', { class: 'muted' }, MT.say(MT.CODE[targetCh])))),
+          h('div', { class: 'row' },
+            h('button', { class: 'btn small', onclick: () => { MT.Audio.ensure(); MT.Audio.play(targetCh, { lead: 0.05 }); } }, '🔊 Hear'),
+            h('button', { class: 'btn small', onclick: pickNextTarget }, 'Skip ›')));
+      } else if (subMode === 'ear') {
+        targetBox.append(
+          h('div', {},
+            h('div', { class: 'muted small' }, 'Listen and trace the rhythm you heard:'),
+            h('div', { class: 'row' },
+              h('span', { class: 'tree-target-ch' }, '?'),
+              h('small', { class: 'muted' }, 'Echo the dits & dahs on the tree'))),
+          h('div', { class: 'row' },
+            h('button', { class: 'btn small', onclick: () => { MT.Audio.ensure(); MT.Audio.play(targetCh, { lead: 0.05 }); } }, '🔊 Replay'),
+            h('button', { class: 'btn small', onclick: () => traceCharacter(targetCh) }, '👁 Reveal'),
+            h('button', { class: 'btn small', onclick: pickNextTarget }, 'Skip ›')));
+      }
+    }
+
+    // ---- Update SVG Visuals in Real Time
+    function updateVisuals() {
+      const activeTree = TREE_SETS[st.treeSet] || TREE_SETS.abc;
+      const displayPat = committedPat || curPat;
+      const isCommitted = !!committedPat;
+
+      // 1. Update SVG edges & nodes
+      activeTree.nodes.forEach((n) => {
+        const edge = edgeByPat[n.pat];
+        const node = nodeByPat[n.pat];
+        if (!edge || !node) return;
+        const isPrefix = displayPat.length >= n.pat.length && displayPat.slice(0, n.pat.length) === n.pat;
+        const isExact = displayPat === n.pat;
+        const isPreview = !isCommitted && previewSym && (curPat + previewSym) === n.pat;
+
+        edge.classList.toggle('walked', isPrefix);
+        edge.classList.toggle('preview', !!isPreview);
+
+        node.classList.toggle('walked', isPrefix && !isExact);
+        node.classList.toggle('active', isExact && !isCommitted);
+        node.classList.toggle('preview', !!isPreview);
+        node.classList.toggle('committed', isExact && isCommitted && commitOutcome !== 'bad');
+        node.classList.toggle('bad', isExact && isCommitted && commitOutcome === 'bad');
+        node.classList.toggle('target-hint', subMode === 'target' && n.ch === targetCh);
+      });
+
+      // 2. Position animated cursor ring
+      const activeNode = activeTree.byPat[displayPat];
+      const pos = activeNode || activeTree.root;
+      if (cursorRing) {
+        cursorRing.setAttribute('transform', 'translate(' + pos.x + ',' + pos.y + ')');
+        cursorRing.classList.toggle('committed', isCommitted && commitOutcome !== 'bad');
+        cursorRing.classList.toggle('bad', isCommitted && commitOutcome === 'bad');
+      }
+
+      // 3. Update Live Bar & Tape
+      patBox.innerHTML = '';
+      if (!displayPat) {
+        patBox.append(h('span', { class: 'muted small' }, isDown ? 'Holding key…' : 'At root (📡) — tap or hold to step down tree'));
+        sayBox.textContent = '';
+        landBox.textContent = '📡';
+        landBox.className = 'tree-live-land';
+      } else {
+        displayPat.split('').forEach((s) => patBox.append(h('i', { class: s === '.' ? 'dot' : 'dash' })));
+        sayBox.textContent = MT.say(displayPat);
+        const decoded = MT.DECODE[displayPat] || '?';
+        landBox.textContent = decoded;
+        landBox.className = 'tree-live-land' + (isCommitted ? (commitOutcome === 'bad' ? ' bad' : ' good') : '');
+      }
+
+      tapeText.textContent = tape || 'Decoded characters appear here…';
+      tapeText.className = tape ? '' : 'muted small';
+    }
+
+    // ---- Keying & Auto-Commit Logic
+    function scheduleCommit() {
+      clearTimeout(commitTimer);
+      const th = thresholds(st.sendWpm || 12);
+      commitTimer = setTimeout(commitChar, th.commitMs);
+    }
+
+    function stepSymbol(sym, playTone) {
+      if (sym !== '.' && sym !== '-') return;
+      clearTimeout(commitTimer);
+      clearTimeout(resetTimer);
+      clearTraceTimers();
+      committedPat = '';
+      commitOutcome = '';
+      previewSym = '';
+      if (curPat.length < 6) curPat += sym;
+
+      if (playTone !== false) {
+        const th = thresholds(st.sendWpm || 12);
+        const ms = sym === '.' ? th.unitMs : th.unitMs * 3;
+        MT.Audio.ensure();
+        MT.Audio.toneStart();
+        setTimeout(() => { if (!isDown) MT.Audio.toneStop(); }, Math.max(40, Math.round(ms)));
+      }
+      updateVisuals();
+      scheduleCommit();
+    }
+
+    function commitChar() {
+      clearTimeout(commitTimer);
+      if (!curPat) return;
+      const pat = curPat;
+      const got = MT.DECODE[pat] || null;
+      curPat = '';
+      previewSym = '';
+      committedPat = pat;
+
+      if (subMode === 'free') {
+        commitOutcome = got ? 'good' : 'bad';
+        if (got) {
+          tape = (tape + got).slice(-28);
+          const s = sessionStats[got] || (sessionStats[got] = { seen: 0, correct: 0 });
+          s.seen++; s.correct++;
+          groupsDone++;
+        }
+      } else {
+        const ok = got === targetCh;
+        commitOutcome = ok ? 'good' : 'bad';
+        const s = sessionStats[targetCh] || (sessionStats[targetCh] = { seen: 0, correct: 0 });
+        s.seen++;
+        if (ok) {
+          s.correct++;
+          tape = (tape + got).slice(-28);
+          groupsDone++;
+        }
+      }
+
+      updateVisuals();
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => {
+        const wasGoodDrill = subMode !== 'free' && commitOutcome === 'good';
+        committedPat = '';
+        commitOutcome = '';
+        updateVisuals();
+        if (wasGoodDrill) pickNextTarget();
+      }, 650);
+    }
+
+    function clearCurrent() {
+      clearTimeout(commitTimer);
+      clearTimeout(resetTimer);
+      clearTraceTimers();
+      if (isDown) {
+        isDown = false;
+        cancelAnimationFrame(meterRaf);
+        MT.Audio.toneStop();
+      }
+      curPat = '';
+      previewSym = '';
+      committedPat = '';
+      commitOutcome = '';
+      if (holdFill) holdFill.style.width = '0%';
+      updateVisuals();
+    }
+
+    function traceCharacter(ch) {
+      const code = MT.CODE[ch];
+      if (!code) return;
+      clearCurrent();
+      MT.Audio.ensure();
+      MT.Audio.play(ch, { lead: 0.02 });
+      const t = MT.timing(st.charWpm, st.effWpm);
+      const unitMs = t.unit * 1000;
+      let elapsed = 20;
+      for (let i = 0; i < code.length; i++) {
+        const sym = code[i];
+        const stepAt = elapsed;
+        traceTimers.push(setTimeout(() => {
+          committedPat = '';
+          curPat = code.slice(0, i + 1);
+          updateVisuals();
+        }, stepAt));
+        elapsed += (sym === '.' ? 1 : 3) * unitMs + unitMs;
+      }
+      traceTimers.push(setTimeout(() => {
+        curPat = '';
+        committedPat = code;
+        commitOutcome = 'good';
+        updateVisuals();
+      }, elapsed));
+      traceTimers.push(setTimeout(() => {
+        committedPat = '';
+        commitOutcome = '';
+        updateVisuals();
+      }, elapsed + 700));
+    }
+
+    // ---- Input Controls
+    const padContainer = h('div', { class: 'stack' });
+    let holdFill = null, holdTag = null, singlePadBtn = null;
+
+    function updateHoldBar() {
+      if (!isDown || !holdFill) return;
+      const th = thresholds(st.sendWpm || 12);
+      const dur = performance.now() - downAt;
+      const pct = Math.min(100, Math.round((dur / th.maxBarMs) * 100));
+      holdFill.style.width = pct + '%';
+      const isDah = dur >= th.dashMs;
+      holdFill.classList.toggle('dah', isDah);
+      const nextPreview = isDah ? '-' : '.';
+      if (previewSym !== nextPreview) {
+        previewSym = nextPreview;
+        updateVisuals();
+      }
+      if (holdTag) holdTag.textContent = Math.round(dur) + ' ms → ' + (isDah ? 'dah (−)' : 'dit (·)');
+      meterRaf = requestAnimationFrame(updateHoldBar);
+    }
+
+    function keyDown(nowMs) {
+      if (isDown) return;
+      clearTimeout(commitTimer);
+      clearTimeout(resetTimer);
+      clearTraceTimers();
+      committedPat = '';
+      commitOutcome = '';
+      isDown = true;
+      downAt = nowMs != null ? nowMs : performance.now();
+      previewSym = '.';
+      if (singlePadBtn) singlePadBtn.classList.add('active');
+      MT.Audio.ensure();
+      MT.Audio.toneStart();
+      updateVisuals();
+      if (nowMs == null) {
+        cancelAnimationFrame(meterRaf);
+        meterRaf = requestAnimationFrame(updateHoldBar);
+      }
+    }
+
+    function keyUp(overrideDurMs) {
+      if (!isDown) return;
+      isDown = false;
+      cancelAnimationFrame(meterRaf);
+      MT.Audio.toneStop();
+      if (singlePadBtn) singlePadBtn.classList.remove('active');
+      const th = thresholds(st.sendWpm || 12);
+      const dur = overrideDurMs != null ? overrideDurMs : (performance.now() - downAt);
+      const sym = dur < th.dashMs ? '.' : '-';
+      previewSym = '';
+      if (holdFill) {
+        const pct = Math.min(100, Math.round((dur / th.maxBarMs) * 100));
+        holdFill.style.width = pct + '%';
+        holdFill.classList.toggle('dah', sym === '-');
+      }
+      if (holdTag) holdTag.textContent = Math.round(dur) + ' ms → ' + (sym === '-' ? 'dah (−)' : 'dit (·)');
+      stepSymbol(sym, false);
+    }
+
+    function renderInputPad() {
+      padContainer.innerHTML = '';
+      holdFill = null; holdTag = null; singlePadBtn = null;
+      const th = thresholds(st.sendWpm || 12);
+
+      if (st.treeInput === 'two') {
+        const ditBtn = h('button', {
+          class: 'keyer-pad tree-btn-dit',
+          'data-tree-pad': '.',
+          onclick: () => stepSymbol('.', true)
+        },
+          h('span', { class: 'keyer-ic' }, '●'),
+          h('b', {}, '· DIT'),
+          h('small', { class: 'muted' }, 'Short step ( . )'));
+
+        const dahBtn = h('button', {
+          class: 'keyer-pad tree-btn-dah',
+          'data-tree-pad': '-',
+          onclick: () => stepSymbol('-', true)
+        },
+          h('span', { class: 'keyer-ic' }, '▬'),
+          h('b', {}, '− DAH'),
+          h('small', { class: 'muted' }, 'Long step ( - )'));
+
+        padContainer.append(
+          h('div', { class: 'tree-pad-two' }, ditBtn, dahBtn),
+          h('p', { class: 'muted small center' }, 'Tap · Dit or − Dah (or . / - or arrows). Pauses auto-commit the character.'));
+      } else {
+        holdFill = h('div', { class: 'hold-fill' });
+        holdTag = h('span', { class: 'muted small' }, 'dit < ' + Math.round(th.dashMs) + ' ms ≤ dah');
+        const splitPct = Math.round((th.dashMs / th.maxBarMs) * 100);
+        const holdMeter = h('div', { class: 'send-meter' },
+          h('div', { class: 'hold-bar' },
+            holdFill,
+            h('i', { class: 'hold-split', style: 'left:' + splitPct + '%', title: 'dit / dah threshold' })),
+          h('div', { class: 'row between' },
+            h('small', { class: 'muted' }, '· dit'),
+            holdTag,
+            h('small', { class: 'muted' }, '− dah')));
+
+        singlePadBtn = h('button', {
+          class: 'keyer-pad tree-btn-single',
+          'data-tree-pad': 'single',
+          onpointerdown: (e) => { e.preventDefault(); keyDown(); },
+          onpointerup: (e) => { e.preventDefault(); keyUp(); },
+          onpointercancel: () => keyUp(),
+          onpointerleave: () => { if (isDown) keyUp(); },
+          oncontextmenu: (e) => e.preventDefault()
+        },
+          h('span', { class: 'keyer-ic' }, '📡'),
+          h('b', {}, 'PRESS / HOLD KEY'),
+          h('small', { class: 'muted' }, 'Tap = · Dit  |  Hold = − Dah  |  Spacebar'));
+
+        padContainer.append(holdMeter, singlePadBtn);
+      }
+    }
+
+    // ---- Top Tabs: Set Switcher (ABC / 123 / .,?/)
+    const setBtns = [];
+    function switchTreeSet(newSet) {
+      if (!TREE_SETS[newSet]) return;
+      st.treeSet = newSet;
+      S.save();
+      setBtns.forEach((x) => x.el.classList.toggle('active', x.id === newSet));
+      clearCurrent();
+      renderTreeSvg();
+      if (subMode !== 'free') pickNextTarget();
+      else renderTargetBox();
+      updateVisuals();
+    }
+
+    const setToggleRow = h('div', { class: 'seg three tree-set-seg' }, [
+      { id: 'abc', label: 'ABC' },
+      { id: 'num', label: '123' },
+      { id: 'punct', label: '.,?/' }
+    ].map((opt) => {
+      const b = h('button', {
+        class: 'seg-btn' + (st.treeSet === opt.id ? ' active' : ''),
+        'data-tree-set': opt.id,
+        onclick: () => switchTreeSet(opt.id)
+      }, opt.label);
+      setBtns.push({ id: opt.id, el: b });
+      return b;
+    }));
+
+    // ---- Top Mode & Input Toggle Controls
+    const inputBtns = [];
+    const inputToggleRow = h('div', { class: 'seg' }, [
+      { id: 'single', label: '1 Button' },
+      { id: 'two', label: '2 Buttons' }
+    ].map((opt) => {
+      const b = h('button', {
+        class: 'seg-btn' + (st.treeInput === opt.id ? ' active' : ''),
+        'data-tree-input': opt.id,
+        onclick: () => {
+          st.treeInput = opt.id;
+          S.save();
+          inputBtns.forEach((x) => x.el.classList.toggle('active', x.id === opt.id));
+          clearCurrent();
+          renderInputPad();
+        }
+      }, opt.label);
+      inputBtns.push({ id: opt.id, el: b });
+      return b;
+    }));
+
+    const modeBtns = [];
+    const modeToggleRow = h('div', { class: 'seg three' }, [
+      { id: 'free', label: 'Explore' },
+      { id: 'target', label: 'Find' },
+      { id: 'ear', label: 'Ear' }
+    ].map((opt) => {
+      const b = h('button', {
+        class: 'seg-btn' + (subMode === opt.id ? ' active' : ''),
+        'data-tree-mode': opt.id,
+        onclick: () => {
+          subMode = opt.id;
+          modeBtns.forEach((x) => x.el.classList.toggle('active', x.id === opt.id));
+          clearCurrent();
+          if (subMode !== 'free') pickNextTarget();
+          else renderTargetBox();
+        }
+      }, opt.label);
+      modeBtns.push({ id: opt.id, el: b });
+      return b;
+    }));
+
+    const wpmValTop = h('span', { class: 'muted small' }, st.sendWpm + ' WPM');
+    const wpmValSlider = h('span', { class: 'muted small' }, st.sendWpm + ' WPM (dit ≈ ' + Math.round(1200 / st.sendWpm) + ' ms)');
+    const wpmSlider = h('input', {
+      type: 'range', min: 5, max: 25, step: 1, value: st.sendWpm,
+      oninput: (e) => {
+        st.sendWpm = Number(e.target.value);
+        wpmValTop.textContent = st.sendWpm + ' WPM';
+        wpmValSlider.textContent = st.sendWpm + ' WPM (dit ≈ ' + Math.round(1200 / st.sendWpm) + ' ms)';
+        S.save();
+        renderInputPad();
+      }
+    });
+
+    root.append(
+      h('header', { class: 'top' },
+        h('button', { class: 'btn ghost small', onclick: () => { flushStreakTime(); App.go('home'); } }, '‹ Home'),
+        h('div', { class: 'grow' }, h('h1', {}, 'Morse Code Tree')),
+        wpmValTop),
+      h('section', { class: 'card tree-card' },
+        setToggleRow,
+        modeToggleRow,
+        targetBox,
+        svgContainer,
+        liveBar,
+        inputToggleRow,
+        padContainer,
+        tapeBox,
+        h('label', { class: 'set' },
+          h('div', { class: 'row between' }, h('small', { class: 'muted' }, 'Keying & pause speed'), wpmValSlider),
+          wpmSlider))
+    );
+
+    renderTreeSvg();
+    renderInputPad();
+    updateVisuals();
+
+    // ---- Keyboard shortcuts
+    function onKeyDown(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === ' ') {
+        e.preventDefault();
+        if (!e.repeat) keyDown();
+      } else if (e.key === '.' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        if (!e.repeat) stepSymbol('.', true);
+      } else if (e.key === '-' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (!e.repeat) stepSymbol('-', true);
+      } else if (e.key === 'Backspace' || e.key === 'Escape') {
+        e.preventDefault();
+        clearCurrent();
+      } else if (e.key === 'Enter' && curPat) {
+        e.preventDefault();
+        commitChar();
+      }
+    }
+
+    function onKeyUp(e) {
+      if (e.key === ' ' && isDown) {
+        e.preventDefault();
+        keyUp();
+      }
+    }
+
+    const ticker = setInterval(() => {
+      if (document.visibilityState === 'visible') activeSec++;
+    }, 1000);
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
+
+    MT.Tree.debug = {
+      get state() {
+        return {
+          treeSet: st.treeSet,
+          curPat: curPat,
+          committedPat: committedPat,
+          commitOutcome: commitOutcome,
+          subMode: subMode,
+          targetCh: targetCh,
+          tape: tape,
+          treeInput: st.treeInput,
+          th: thresholds(st.sendWpm || 12),
+          targets: (TREE_SETS[st.treeSet] || TREE_SETS.abc).targets
+        };
+      },
+      setTreeSet: (set) => switchTreeSet(set),
+      stepSymbol: (sym) => stepSymbol(sym, false),
+      tapHold: (ms) => { keyDown(0); keyUp(ms); },
+      holdPreview: (ms) => {
+        keyDown(0);
+        const th = thresholds(st.sendWpm || 12);
+        previewSym = ms >= th.dashMs ? '-' : '.';
+        updateVisuals();
+      },
+      commit: commitChar,
+      clear: clearCurrent,
+      setTarget: (ch) => { targetCh = ch; renderTargetBox(); updateVisuals(); },
+      addActiveSec: (s) => { activeSec += s; },
+      flushStreak: flushStreakTime
+    };
+
+    return function cleanup() {
+      clearInterval(ticker);
+      clearTimeout(commitTimer);
+      clearTimeout(resetTimer);
+      clearTraceTimers();
+      cancelAnimationFrame(meterRaf);
+      MT.Audio.toneStop();
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('keyup', onKeyUp);
+      flushStreakTime();
+      MT.Tree.debug = null;
+    };
+  });
+
+  function makeTreeIcon() {
+    return svgEl('svg', { viewBox: '0 0 36 36', width: '34', height: '34', role: 'img', 'aria-label': 'Morse Tree' }, [
+      // Central antenna transmitter root
+      svgEl('line', { x1: '18', y1: '20', x2: '18', y2: '6', stroke: '#38bdf8', 'stroke-width': '2', 'stroke-linecap': 'round' }),
+      svgEl('circle', { cx: '18', cy: '5', r: '2', fill: '#38bdf8' }),
+      svgEl('path', { d: 'M 14 3 A 5 5 0 0 0 14 9', stroke: '#38bdf8', 'stroke-width': '1.5', fill: 'none', 'stroke-linecap': 'round' }),
+      svgEl('path', { d: 'M 22 3 A 5 5 0 0 1 22 9', stroke: '#38bdf8', 'stroke-width': '1.5', fill: 'none', 'stroke-linecap': 'round' }),
+      svgEl('circle', { cx: '18', cy: '20', r: '2.5', fill: '#38bdf8' }),
+
+      // Left spine (Dah / -): horizontal line to Dah bar (T) & sub-branch
+      svgEl('line', { x1: '18', y1: '20', x2: '6', y2: '20', stroke: '#64748b', 'stroke-width': '2', 'stroke-linecap': 'round' }),
+      svgEl('rect', { x: '4', y: '17.5', width: '7', height: '5', rx: '1.5', fill: '#38bdf8' }),
+      svgEl('line', { x1: '8', y1: '22', x2: '8', y2: '30', stroke: '#475569', 'stroke-width': '1.8', 'stroke-linecap': 'round' }),
+      svgEl('circle', { cx: '8', cy: '30', r: '2.2', fill: '#94a3b8' }),
+
+      // Right spine (Dit / ·): line to Dit circle (E) & sub-branch
+      svgEl('line', { x1: '18', y1: '20', x2: '30', y2: '20', stroke: '#64748b', 'stroke-width': '2', 'stroke-linecap': 'round' }),
+      svgEl('circle', { cx: '28', cy: '20', r: '3.2', fill: '#38bdf8' }),
+      svgEl('line', { x1: '28', y1: '22', x2: '28', y2: '30', stroke: '#475569', 'stroke-width': '1.8', 'stroke-linecap': 'round' }),
+      svgEl('rect', { x: '26', y: '28', width: '4', height: '6', rx: '1.2', fill: '#94a3b8' })
+    ]);
+  }
+
+  MT.TREE_LAYOUT = LAYOUT;
+  MT.Tree = { layout: LAYOUT, debug: null, makeTreeIcon: makeTreeIcon };
+
+  App.registerMode({
+    id: 'tree', icon: makeTreeIcon, title: 'Morse Tree', screen: 'tree',
+    tagline: () => 'Visual branching chart · 1-button or 2-button real-time practice'
+  });
+})(globalThis);
+
 /* ==================== boot ==================== */
-if (/^#__script=/.test(location.hash)) {
+const scriptMatch = location.hash.match(/^#__script=([^#]+)/) || location.search.match(/[?&]__script=([^&]+)/);
+if (scriptMatch) {
   const s = document.createElement('script');
-  s.src = location.hash.slice(10).split('#')[0];
+  s.src = decodeURIComponent(scriptMatch[1]);
   document.head.append(s);
 } else {
   MT.App.start();
