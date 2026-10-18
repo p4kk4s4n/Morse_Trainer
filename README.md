@@ -75,6 +75,22 @@ Learn how amateur radio operators actually communicate on the air:
 
 ---
 
+### 📡 6. Morse Tree (Interactive Branching System)
+- Authentic orthogonal branching diagram modeled after the classic Morse code keychain reference chart (`MORSE 📡 CODE`), featuring pure 90-degree pipe routing with zero diagonal lines and zero plain dots. Dits are represented as circles (`●`) and dahs as horizontal/vertical bars (`▬` / `▮`).
+- **3 Dedicated Trees (Top Tabs):**
+  - **`ABC` (Letters):** Full 26-letter keychain chart (`A–Z`).
+  - **`123` (Numbers):** Symmetrical 10-digit tree (`0–9`) arranged with dahs descending the left spine (`0, 9, 8, 7, 6`) and dits descending the right spine (`5, 4, 3, 2, 1`).
+  - **`.,?/` (Punctuation):** Full 12-symbol standard International Morse punctuation suite (`.` `,` `?` `/` `=` `@` `+` `-` `'` `:` `"` `(`). Target symbols glow in cyan with high-contrast labels.
+- **Zero Horizontal Scrolling:** Optimized responsive layout where all controls, live decoded tape, and SVG trees scale smoothly to mobile screens without left-right scrolling.
+- **Scoped Practice Sub-Modes:**
+  - **Explore:** Tap any node to hear and watch its animated path, or key freely onto the decoded tape.
+  - **Find:** Key a prompted character down the tree; prompts are strictly scoped to the active tab's character set.
+  - **Ear Trace:** Listen to a mystery sound from the active set and trace its rhythm down the tree. Includes a "Reveal" button to demonstrate the path.
+- **Input Methods:** Switch anytime between **1 Button** (Press & hold keyer with visual timing meter) and **2 Buttons** (`· Dit` / `− Dah`).
+- **Progress Preservation:** Your last-used tree tab is remembered automatically, and active time spent practicing counts directly toward your daily streak (`🔥`).
+
+---
+
 ## 📱 Mobile-Friendly Controls & Settings
 
 Tap the **Settings** tab (gear icon) to customize your experience:
@@ -92,9 +108,38 @@ Tap the **Settings** tab (gear icon) to customize your experience:
 
 ## 📊 Progress & Stats Tracking
 
-Open the **Progress** tab to inspect your stats:
-- **Streak & Practiced Time:** Daily streak counter and total practice time.
+Open the **Progress** tab (bar chart icon) to inspect your stats:
+- **Streak & Practiced Time:** Daily streak counter (`🔥`) and total practice time.
 - **Accuracy Heatmap:** Green/yellow/red color-coded breakdown of every character in the Morse alphabet.
 - **Words & Callsigns Library:** An interactive library of real English words and callsigns you can spell using your unlocked letters. Tap any word to hear it in Morse!
 - **Curriculum Roadmap (54 Lessons):** View both completed lessons (marked with `✓`) and upcoming lessons (`▶ Up next` / `🔒 Locked`). Tap any lesson to preview its introduced sounds!
-- **Data Backup & Restore:** Export a one-click JSON backup of your progress to transfer between devices.
+
+---
+
+## 💾 How to Backup & Restore Your Progress
+
+Your lesson progress, streaks, milestone badges, and spaced repetition memory boxes are saved directly in your browser's local storage (`localStorage`). This means your progress remains completely safe across software updates on GitHub Pages!
+
+To move your progress to another device (e.g. from your phone to your computer) or keep a safe backup before clearing browser data:
+
+### 📤 How to Create a Backup
+
+1. In the app, tap the **Settings** tab (⚙️ gear icon in the bottom navigation bar).
+2. Scroll down to the **"Data & offline"** section.
+3. Tap **"Copy progress backup"**.
+   - If supported by your browser, your full progress code is copied directly to your clipboard.
+   - If prompted, you can select and copy the text string manually.
+4. Paste and save this text string somewhere safe (such as Notes, an email to yourself, or a text file).
+
+### 📥 How to Restore Your Progress
+
+1. Copy your previously saved backup text string to your clipboard.
+2. Open the Morse Trainer app on any phone, tablet, or computer.
+3. Tap the **Settings** tab (⚙️ gear icon).
+4. Scroll down to **"Data & offline"** and tap **"Restore from backup"**.
+5. Paste your backup text into the dialog prompt and tap **OK**.
+6. The app will confirm `Restored.` and immediately take you to the Home screen with your exact lesson level, streak, custom settings, and earned badges fully intact.
+
+> [!TIP]
+> **Switching Devices or Browsers?**
+> Because browser local storage is private to each browser app (Safari, Chrome, Firefox), use this backup and restore process whenever you want to transfer your training progress from your phone to your laptop or across different browsers.
