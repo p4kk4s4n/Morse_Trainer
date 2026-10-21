@@ -404,6 +404,14 @@ b { font-weight: 650; }
 .keyer-pad.active small, .keyer-pad:active small { color: var(--accent-ink); }
 .keyer-ic { font-size: 2rem; }
 .keyer-pad b { font-size: 1.35rem; letter-spacing: .05em; }
+
+/* toast notification */
+.toast-container { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; width: min(440px, 92%); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.toast { background: var(--panel2); color: var(--text); border: 1px solid var(--accent); border-radius: 99px; padding: 10px 18px; font-size: .88rem; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,.6), 0 0 16px rgba(56, 189, 248, .3); display: flex; align-items: center; gap: 10px; animation: toast-in .25s ease-out; pointer-events: auto; }
+.toast.good { border-color: var(--good); box-shadow: 0 8px 30px rgba(0,0,0,.6), 0 0 16px rgba(74, 222, 128, .3); }
+.toast.warn { border-color: var(--warn); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-12px) scale(.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes toast-out { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(-8px) scale(.95); } }
   </style>
 </head>
 <body>
@@ -418,6 +426,8 @@ b { font-weight: 650; }
 /* Morse data + pure logic (no DOM). Works in browser and in test pages. */
 (function (g) {
   const MT = (g.MT = g.MT || {});
+
+  MT.APP_VERSION = 'v14';
 
   MT.CODE = {
     A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....',
@@ -1543,6 +1553,23 @@ b { font-weight: 650; }
 
       wrap.cleanup = () => clearTimeout(autoTimer);
       return wrap;
+    },
+
+    /** Display a non-intrusive floating toast notification (good, warn, etc.) */
+    toast(msg, type, duration) {
+      let c = document.querySelector('.toast-container');
+      if (!c) {
+        c = h('div', { class: 'toast-container', 'aria-live': 'polite' });
+        document.body.append(c);
+      }
+      const t = h('div', { class: 'toast ' + (type || 'good'), 'data-toast': type || 'good' }, msg);
+      c.append(t);
+      const dur = duration || 3200;
+      setTimeout(() => {
+        t.style.animation = 'toast-out .25s forwards';
+        setTimeout(() => t.remove(), 260);
+      }, dur);
+      return t;
     }
   };
 
@@ -1684,6 +1711,93 @@ b { font-weight: 650; }
       } catch (e) { /* ignore canvas/manifest errors */ }
     },
 
+    async checkForUpdate(opts) {
+      opts = opts || {};
+      const onStatus = typeof opts.onStatus === 'function' ? opts.onStatus : () => {};
+      MT.Store.save();
+      onStatus('Checking for latest version…');
+
+      const currentVer = MT.APP_VERSION || 'v14';
+
+      if (!/^https?:$/.test(location.protocol)) {
+        const msg = currentVer + ' is latest release already';
+        onStatus(msg);
+        MT.UI.toast(msg, 'good');
+        return { updated: false, version: currentVer, reason: 'local' };
+      }
+
+      try {
+        const cbUrl = './index.html?_cb=' + Date.now();
+        const res = await fetch(cbUrl, { cache: 'no-store' });
+        if (!res || !res.ok) throw new Error('Network error: ' + (res ? res.status : 'no response'));
+        const text = await res.text();
+
+        const match = text.match(/MT\.APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+        const remoteVer = match ? match[1] : null;
+
+        const hasNewVersion = !!(remoteVer && remoteVer !== currentVer);
+
+        if (hasNewVersion || opts.force) {
+          const targetVer = remoteVer || currentVer;
+          onStatus('Update found (' + targetVer + ') — refreshing cache…');
+
+          if ('caches' in g) {
+            try {
+              const keys = await caches.keys();
+              await Promise.all(keys.map((k) => caches.delete(k)));
+            } catch (e) {}
+          }
+
+          if ('serviceWorker' in navigator) {
+            try {
+              const regs = await navigator.serviceWorker.getRegistrations();
+              for (const reg of regs) {
+                await reg.update().catch(() => {});
+                if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+              }
+            } catch (e) {}
+          }
+
+          const finishMsg = 'Update completed to ' + targetVer;
+          onStatus(finishMsg);
+
+          if (opts.noReload) {
+            MT.UI.toast(finishMsg, 'good');
+            return { updated: true, version: targetVer };
+          }
+
+          try {
+            sessionStorage.setItem('mt_toast', JSON.stringify({ msg: finishMsg, type: 'good' }));
+          } catch (e) {}
+
+          location.reload();
+          return { updated: true, version: targetVer };
+        } else {
+          const latestMsg = currentVer + ' is latest release already';
+          onStatus(latestMsg);
+          MT.UI.toast(latestMsg, 'good');
+          return { updated: false, version: currentVer };
+        }
+      } catch (err) {
+        console.warn('Check update error:', err);
+        const offlineMsg = 'Could not reach server — using cached ' + currentVer;
+        onStatus(offlineMsg);
+        MT.UI.toast(offlineMsg, 'warn');
+        return { updated: false, version: currentVer, error: err };
+      }
+    },
+
+    checkPendingToast() {
+      try {
+        const pending = sessionStorage.getItem('mt_toast');
+        if (pending) {
+          sessionStorage.removeItem('mt_toast');
+          const obj = JSON.parse(pending);
+          return MT.UI.toast(obj.msg, obj.type);
+        }
+      } catch (e) {}
+    },
+
     start() {
       this.setupPwa();
       this.buildNav();
@@ -1697,6 +1811,7 @@ b { font-weight: 650; }
         navigator.serviceWorker.register('sw.js').catch(() => {});
       }
       this.go('home');
+      this.checkPendingToast();
     }
   };
 
@@ -2330,6 +2445,22 @@ b { font-weight: 650; }
       navigator.serviceWorker.ready.then(() => { swStatus.textContent = '✓ Offline mode ready — cached for use without internet.'; });
     }
 
+    const updateStatus = h('p', { class: 'muted small center', 'data-update-status': '' });
+    const checkBtn = h('button', {
+      class: 'btn small',
+      'data-action': 'check-update',
+      onclick: async () => {
+        checkBtn.disabled = true;
+        try {
+          await App.checkForUpdate({
+            onStatus: (msg) => { updateStatus.textContent = msg; }
+          });
+        } finally {
+          checkBtn.disabled = false;
+        }
+      }
+    }, '🔄 Check for update & reload');
+
     root.append(
       h('header', { class: 'top' }, h('div', {}, h('h1', {}, 'Settings'))),
       h('section', { class: 'card' }, h('b', {}, 'Sound & haptics'),
@@ -2376,8 +2507,14 @@ b { font-weight: 650; }
             h('span', {}, 'Daily streak goal'),
             h('b', {}, '5 min / day')),
           h('small', { class: 'muted' }, 'Fixed at 5 minutes of active practice per day to maintain your daily streak.'))),
-      h('section', { class: 'card' }, h('b', {}, 'Data & offline'), swStatus,
+      h('section', { class: 'card' },
+        h('div', { class: 'row between' },
+          h('b', {}, 'Data & offline'),
+          h('span', { class: 'badge', 'data-app-version': MT.APP_VERSION }, 'Version ' + MT.APP_VERSION)),
+        swStatus,
         h('div', { class: 'stack' },
+          checkBtn,
+          updateStatus,
           h('button', { class: 'btn small', onclick: () => {
             const t = S.exportJson();
             (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
