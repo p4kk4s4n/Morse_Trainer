@@ -277,12 +277,12 @@ b { font-weight: 650; }
 .morse-tree-svg .t-edge.preview { stroke: var(--warn); stroke-width: 3; stroke-dasharray: 4 4; }
 .morse-tree-svg .t-node { cursor: pointer; }
 .morse-tree-svg .t-shape { fill: #475569; stroke: #64748b; stroke-width: 1.2; transition: fill .12s, stroke .12s, transform .12s; }
-.morse-tree-svg .t-label { fill: var(--text); font-size: 13.5px; font-weight: 800; font-family: system-ui, -apple-system, sans-serif; pointer-events: none; }
+.morse-tree-svg .t-label { fill: var(--muted); font-size: 11.5px; font-weight: 700; font-family: system-ui, -apple-system, sans-serif; pointer-events: none; paint-order: stroke fill; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; }
 .morse-tree-svg .t-node:hover .t-shape { stroke: var(--accent); }
 .morse-tree-svg .t-node.walked .t-shape { fill: var(--accent); stroke: #bae6fd; }
 .morse-tree-svg .t-node.walked .t-label { fill: var(--accent); }
 .morse-tree-svg .t-node.active .t-shape { fill: var(--accent); stroke: #fff; stroke-width: 2; filter: drop-shadow(0 0 7px rgba(56, 189, 248, .85)); }
-.morse-tree-svg .t-node.active .t-label { fill: #fff; font-size: 15px; }
+.morse-tree-svg .t-node.active .t-label { fill: #fff; font-size: 16px; }
 .morse-tree-svg .t-node.preview .t-shape { fill: rgba(251, 191, 36, .35); stroke: var(--warn); stroke-width: 1.8; }
 .morse-tree-svg .t-node.preview .t-label { fill: var(--warn); }
 .morse-tree-svg .t-node.committed .t-shape { fill: var(--good); stroke: #ecfdf5; stroke-width: 2.2; filter: drop-shadow(0 0 9px rgba(52, 211, 153, .9)); }
@@ -290,7 +290,7 @@ b { font-weight: 650; }
 .morse-tree-svg .t-node.bad .t-shape { fill: var(--bad); stroke: #fef2f2; stroke-width: 2; }
 .morse-tree-svg .t-node.bad .t-label { fill: var(--bad); }
 .morse-tree-svg .t-node.target-node .t-shape { stroke: var(--accent); stroke-width: 2; fill: #1e3a5f; }
-.morse-tree-svg .t-node.target-node .t-label { fill: var(--accent); font-weight: 800; font-size: 14.5px; }
+.morse-tree-svg .t-node.target-node .t-label { fill: var(--text); font-weight: 800; font-size: 15.5px; stroke: var(--bg); stroke-width: 4px; }
 .morse-tree-svg .t-node.target-hint .t-shape { stroke: var(--warn); stroke-width: 2.2; }
 .morse-tree-svg .t-cursor { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-dasharray: 3 3; pointer-events: none; transition: transform .12s ease-out; }
 .morse-tree-svg .t-cursor.committed { stroke: var(--good); stroke-dasharray: none; stroke-width: 2.8; }
@@ -791,7 +791,11 @@ b { font-weight: 650; }
   function load() {
     try {
       const raw = g.localStorage && g.localStorage.getItem(KEY);
-      if (raw) return merge(defaults(), JSON.parse(raw));
+      if (raw) {
+        const d = merge(defaults(), JSON.parse(raw));
+        d.settings.goalMin = 5;
+        return d;
+      }
     } catch (e) { /* ignore corrupt data */ }
     return defaults();
   }
@@ -803,6 +807,7 @@ b { font-weight: 650; }
     get settings() { return this.data.settings; },
 
     save() {
+      this.data.settings.goalMin = 5;
       try { g.localStorage.setItem(KEY, JSON.stringify(this.data)); } catch (e) { /* private mode */ }
     },
     reset() { this.data = defaults(); this.save(); },
@@ -811,6 +816,7 @@ b { font-weight: 650; }
       const obj = JSON.parse(text);
       if (!obj || typeof obj !== 'object' || !obj.settings) throw new Error('Not a backup');
       this.data = merge(defaults(), obj);
+      this.data.settings.goalMin = 5;
       this.save();
     },
 
@@ -919,8 +925,9 @@ b { font-weight: 650; }
       const day = this.data.days[today] || (this.data.days[today] = { sec: 0, groups: 0, done: false });
       day.sec += result.activeSec || 0;
       day.groups += result.groups || 0;
+      this.settings.goalMin = 5;
       let newlyDone = false;
-      if (!day.done && day.sec >= this.settings.goalMin * 60) { day.done = true; newlyDone = true; }
+      if (!day.done && day.sec >= 5 * 60) { day.done = true; newlyDone = true; }
       this.save();
       return { newlyDone: newlyDone, doneToday: day.done, streak: this.streak() };
     }
@@ -1041,15 +1048,27 @@ b { font-weight: 650; }
     return handle;
   }
 
-  /** Convert tone events [{at, dur}] (sec) to navigator.vibrate [onMs, offMs, onMs, ...] array. */
+  /**
+   * Convert tone events [{at, dur}] (sec) to navigator.vibrate [onMs, offMs, onMs, ...] array.
+   * Shapes tactile pulses (crisp ~45ms dit, ~140ms dah) and guarantees a >= 95ms silent motor-braking
+   * gap so 5-element numbers and 6-element punctuation rumble as distinct dots & dashes with still moments.
+   */
   function vibratePattern(tones) {
     const out = [];
     for (let i = 0; i < tones.length; i++) {
+      const rawMs = Math.round(tones[i].dur * 1000);
+      const isDah = tones[i].dur >= 0.13 || rawMs >= 130;
+      const onMs = isDah ? Math.min(150, Math.max(125, Math.round(rawMs * 0.78))) : Math.min(55, Math.max(38, Math.round(rawMs * 0.72)));
       if (i > 0) {
-        const gap = Math.max(0, Math.round((tones[i].at - (tones[i - 1].at + tones[i - 1].dur)) * 1000));
+        const prevRawMs = Math.round(tones[i - 1].dur * 1000);
+        const prevIsDah = tones[i - 1].dur >= 0.13 || prevRawMs >= 130;
+        const prevOnMs = prevIsDah ? Math.min(150, Math.max(125, Math.round(prevRawMs * 0.78))) : Math.min(55, Math.max(38, Math.round(prevRawMs * 0.72)));
+        const windowMs = Math.round((tones[i].at - tones[i - 1].at) * 1000);
+        const naturalGap = Math.round((tones[i].at - (tones[i - 1].at + tones[i - 1].dur)) * 1000);
+        const gap = Math.max(95, naturalGap, windowMs - prevOnMs);
         out.push(gap);
       }
-      out.push(Math.max(10, Math.round(tones[i].dur * 1000)));
+      out.push(onMs);
     }
     return out;
   }
@@ -1066,11 +1085,12 @@ b { font-weight: 650; }
 
   let liveOsc = null, liveGain = null;
 
-  function toneStart() {
+  function toneStart(opts) {
+    opts = opts || {};
     if (current) current.stop();
-    toneStop();
+    toneStop({ noHaptic: opts.noHaptic });
     const s = MT.Store.settings;
-    if (s.haptics && canHaptic()) { try { g.navigator.vibrate(2000); } catch (e) {} }
+    if (!opts.noHaptic && s.haptics && canHaptic()) { try { g.navigator.vibrate(350); } catch (e) {} }
     const c = ensure();
     const peak = Math.max(0.02, s.volume) * 0.6;
     const osc = c.createOscillator();
@@ -1087,8 +1107,9 @@ b { font-weight: 650; }
     liveGain = gain;
   }
 
-  function toneStop() {
-    if (canHaptic()) { try { g.navigator.vibrate(0); } catch (e) {} }
+  function toneStop(opts) {
+    opts = opts || {};
+    if (!opts.noHaptic && canHaptic()) { try { g.navigator.vibrate(0); } catch (e) {} }
     if (!liveOsc) return;
     const osc = liveOsc, gain = liveGain;
     liveOsc = null; liveGain = null;
@@ -2302,7 +2323,11 @@ b { font-weight: 650; }
         slider('Characters per group', 'groupSize', 3, 8, 1, (v) => v),
         slider('Groups per Koch round', 'groupsPerRound', 5, 20, 1, (v) => v),
         slider('Accuracy to unlock next letter', 'threshold', 80, 98, 1, (v) => v + '%'),
-        slider('Daily goal', 'goalMin', 3, 30, 1, (v) => v + ' min')),
+        h('div', { class: 'setting-row' },
+          h('div', { class: 'row between' },
+            h('span', {}, 'Daily streak goal'),
+            h('b', {}, '5 min / day')),
+          h('small', { class: 'muted' }, 'Fixed at 5 minutes of active practice per day to maintain your daily streak.'))),
       h('section', { class: 'card' }, h('b', {}, 'Data & offline'), swStatus,
         h('div', { class: 'stack' },
           h('button', { class: 'btn small', onclick: () => {
@@ -3760,126 +3785,126 @@ b { font-weight: 650; }
   ];
 
   const NUM_LAYOUT = [
-    // Top Dah Spine (y = 56, x descends left from root 210)
-    { ch: 'T', pat: '-',     parent: '',     x: 166, y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
-    { ch: 'M', pat: '--',    parent: '-',    x: 124, y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
-    { ch: 'O', pat: '---',   parent: '--',   x: 82,  y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
-    { ch: '',  pat: '----',  parent: '---',  x: 44,  y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
-    { ch: '0', pat: '-----', parent: '----', x: 18,  y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: true },
+    // Top Dah Spine (y = 56, x descends left from root 220)
+    { ch: 'T', pat: '-',     parent: '',     x: 180, y: 56,  shape: 'hbar',   lx: 0,   ly: -18, isTarget: false },
+    { ch: 'M', pat: '--',    parent: '-',    x: 142, y: 56,  shape: 'hbar',   lx: 0,   ly: -18, isTarget: false },
+    { ch: 'O', pat: '---',   parent: '--',   x: 104, y: 56,  shape: 'hbar',   lx: 0,   ly: -18, isTarget: false },
+    { ch: '',  pat: '----',  parent: '---',  x: 68,  y: 56,  shape: 'hbar',   lx: 0,   ly: -18, isTarget: false },
+    { ch: '0', pat: '-----', parent: '----', x: 36,  y: 56,  shape: 'hbar',   lx: -20, ly: 0,   isTarget: true },
 
-    // Left Dit Descendents under T (x = 166)
-    { ch: 'N', pat: '-.',    parent: '-',    x: 166, y: 122, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
-    { ch: 'D', pat: '-..',   parent: '-.',   x: 166, y: 188, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
-    { ch: 'B', pat: '-...',  parent: '-..',  x: 166, y: 254, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
-    { ch: '6', pat: '-....', parent: '-...', x: 166, y: 320, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+    // Left Dit Descendents under T (x = 180)
+    { ch: 'N', pat: '-.',    parent: '-',    x: 180, y: 122, shape: 'circle', lx: 14,  ly: 0,   isTarget: false },
+    { ch: 'D', pat: '-..',   parent: '-.',   x: 180, y: 188, shape: 'circle', lx: 14,  ly: 0,   isTarget: false },
+    { ch: 'B', pat: '-...',  parent: '-..',  x: 180, y: 254, shape: 'circle', lx: 14,  ly: 0,   isTarget: false },
+    { ch: '6', pat: '-....', parent: '-...', x: 180, y: 320, shape: 'circle', lx: -16, ly: 0,   isTarget: true },
 
-    // Left Dit Descendents under M (x = 124)
-    { ch: 'G', pat: '--.',   parent: '--',   x: 124, y: 122, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
-    { ch: 'Z', pat: '--..',  parent: '--.',  x: 124, y: 188, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
-    { ch: '7', pat: '--...', parent: '--..', x: 124, y: 254, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+    // Left Dit Descendents under M (x = 142)
+    { ch: 'G', pat: '--.',   parent: '--',   x: 142, y: 122, shape: 'circle', lx: 14,  ly: 0,   isTarget: false },
+    { ch: 'Z', pat: '--..',  parent: '--.',  x: 142, y: 188, shape: 'circle', lx: 14,  ly: 0,   isTarget: false },
+    { ch: '7', pat: '--...', parent: '--..', x: 142, y: 254, shape: 'circle', lx: -16, ly: 0,   isTarget: true },
 
-    // Left Dit Descendents under O (x = 82)
-    { ch: '',  pat: '---.',  parent: '---',  x: 82,  y: 122, shape: 'circle', lx: 0,   ly: 18,  isTarget: false },
-    { ch: '8', pat: '---..', parent: '---.', x: 82,  y: 188, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+    // Left Dit Descendents under O (x = 104)
+    { ch: '',  pat: '---.',  parent: '---',  x: 104, y: 122, shape: 'circle', lx: 0,   ly: 0,   isTarget: false },
+    { ch: '8', pat: '---..', parent: '---.', x: 104, y: 188, shape: 'circle', lx: -16, ly: 0,   isTarget: true },
 
-    // Left Dit Descendents under '----' (x = 44)
-    { ch: '9', pat: '----.', parent: '----', x: 44,  y: 122, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+    // Left Dit Descendents under '----' (x = 68)
+    { ch: '9', pat: '----.', parent: '----', x: 68,  y: 122, shape: 'circle', lx: -16, ly: 0,   isTarget: true },
 
-    // Top Dit Spine (y = 56, x ascends right from root 210)
-    { ch: 'E', pat: '.',     parent: '',     x: 254, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: false },
-    { ch: 'I', pat: '..',    parent: '.',    x: 296, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: false },
-    { ch: 'S', pat: '...',   parent: '..',   x: 338, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: false },
-    { ch: 'H', pat: '....',  parent: '...',  x: 376, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: false },
-    { ch: '5', pat: '.....', parent: '....', x: 402, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: true },
+    // Top Dit Spine (y = 56, x ascends right from root 220)
+    { ch: 'E', pat: '.',     parent: '',     x: 260, y: 56,  shape: 'circle', lx: 0,   ly: -18, isTarget: false },
+    { ch: 'I', pat: '..',    parent: '.',    x: 298, y: 56,  shape: 'circle', lx: 0,   ly: -18, isTarget: false },
+    { ch: 'S', pat: '...',   parent: '..',   x: 336, y: 56,  shape: 'circle', lx: 0,   ly: -18, isTarget: false },
+    { ch: 'H', pat: '....',  parent: '...',  x: 372, y: 56,  shape: 'circle', lx: 0,   ly: -18, isTarget: false },
+    { ch: '5', pat: '.....', parent: '....', x: 404, y: 56,  shape: 'circle', lx: 16,  ly: 0,   isTarget: true },
 
-    // Right Dah Descendents under E (x = 254)
-    { ch: 'A', pat: '.-',    parent: '.',    x: 254, y: 122, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
-    { ch: 'W', pat: '.--',   parent: '.-',   x: 254, y: 188, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
-    { ch: 'J', pat: '.---',  parent: '.--',  x: 254, y: 254, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
-    { ch: '1', pat: '.----', parent: '.---', x: 254, y: 320, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: true },
+    // Right Dah Descendents under E (x = 260)
+    { ch: 'A', pat: '.-',    parent: '.',    x: 260, y: 122, shape: 'vbar',   lx: -14, ly: 0,   isTarget: false },
+    { ch: 'W', pat: '.--',   parent: '.-',   x: 260, y: 188, shape: 'vbar',   lx: -14, ly: 0,   isTarget: false },
+    { ch: 'J', pat: '.---',  parent: '.--',  x: 260, y: 254, shape: 'vbar',   lx: -14, ly: 0,   isTarget: false },
+    { ch: '1', pat: '.----', parent: '.---', x: 260, y: 320, shape: 'vbar',   lx: 16,  ly: 0,   isTarget: true },
 
-    // Right Dah Descendents under I (x = 296)
-    { ch: 'U', pat: '..-',   parent: '..',   x: 296, y: 122, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
-    { ch: '',  pat: '..--',  parent: '..-',  x: 296, y: 188, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: false },
-    { ch: '2', pat: '..---', parent: '..--', x: 296, y: 254, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: true },
+    // Right Dah Descendents under I (x = 298)
+    { ch: 'U', pat: '..-',   parent: '..',   x: 298, y: 122, shape: 'vbar',   lx: -14, ly: 0,   isTarget: false },
+    { ch: '',  pat: '..--',  parent: '..-',  x: 298, y: 188, shape: 'vbar',   lx: 0,   ly: 0,   isTarget: false },
+    { ch: '2', pat: '..---', parent: '..--', x: 298, y: 254, shape: 'vbar',   lx: 16,  ly: 0,   isTarget: true },
 
-    // Right Dah Descendents under S (x = 338)
-    { ch: 'V', pat: '...-',  parent: '...',  x: 338, y: 122, shape: 'vbar',   lx: 16,  ly: 5,   isTarget: false },
-    { ch: '3', pat: '...--', parent: '...-', x: 338, y: 188, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: true },
+    // Right Dah Descendents under S (x = 336)
+    { ch: 'V', pat: '...-',  parent: '...',  x: 336, y: 122, shape: 'vbar',   lx: -14, ly: 0,   isTarget: false },
+    { ch: '3', pat: '...--', parent: '...-', x: 336, y: 188, shape: 'vbar',   lx: 16,  ly: 0,   isTarget: true },
 
-    // Right Dah Descendents under H (x = 376)
-    { ch: '4', pat: '....-', parent: '....', x: 376, y: 122, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: true }
+    // Right Dah Descendents under H (x = 372)
+    { ch: '4', pat: '....-', parent: '....', x: 372, y: 122, shape: 'vbar',   lx: 16,  ly: 0,   isTarget: true }
   ];
 
   const PUNCT_LAYOUT = [
-    // Top Dah Spine (y = 56, x descends left from root 210)
-    { ch: 'T', pat: '-',      parent: '',      x: 155, y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
-    { ch: 'M', pat: '--',     parent: '-',     x: 95,  y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
-    { ch: 'O', pat: '---',    parent: '--',    x: 35,  y: 56,  shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
+    // Top Dah Spine (y = 56, x descends left from root 220)
+    { ch: 'T', pat: '-',      parent: '',      x: 180, y: 56,  shape: 'hbar',   lx: 0,   ly: -18, isTarget: false },
+    { ch: 'M', pat: '--',     parent: '-',     x: 78,  y: 56,  shape: 'hbar',   lx: 0,   ly: -18, isTarget: false },
+    { ch: 'O', pat: '---',    parent: '--',    x: 38,  y: 56,  shape: 'hbar',   lx: 0,   ly: -18, isTarget: false },
 
-    // Branch under O (x = 35)
-    { ch: '',  pat: '---.',   parent: '---',   x: 35,  y: 120, shape: 'circle', lx: 0,   ly: 18,  isTarget: false },
-    { ch: '',  pat: '---..',  parent: '---.',  x: 35,  y: 185, shape: 'circle', lx: 0,   ly: 18,  isTarget: false },
-    { ch: ':', pat: '---...', parent: '---..', x: 35,  y: 255, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+    // Branch under O (x = 38) -> :
+    { ch: '',  pat: '---.',   parent: '---',   x: 38,  y: 115, shape: 'circle', lx: 0,   ly: 0,   isTarget: false },
+    { ch: '',  pat: '---..',  parent: '---.',  x: 38,  y: 175, shape: 'circle', lx: 0,   ly: 0,   isTarget: false },
+    { ch: ':', pat: '---...', parent: '---..', x: 38,  y: 235, shape: 'circle', lx: -16, ly: 0,   isTarget: true },
 
-    // Branch under M (x = 95)
-    { ch: 'G', pat: '--.',    parent: '--',    x: 95,  y: 120, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
-    { ch: 'Z', pat: '--..',   parent: '--.',   x: 95,  y: 185, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
-    { ch: '',  pat: '--..-',  parent: '--..',  x: 95,  y: 255, shape: 'hbar',   lx: 0,   ly: 18,  isTarget: false },
-    { ch: ',', pat: '--..--', parent: '--..-', x: 95,  y: 325, shape: 'hbar',   lx: 0,   ly: 18,  isTarget: true },
+    // Branch under M (x = 78) -> ,
+    { ch: 'G', pat: '--.',    parent: '--',    x: 78,  y: 115, shape: 'circle', lx: -14, ly: 0,   isTarget: false },
+    { ch: 'Z', pat: '--..',   parent: '--.',   x: 78,  y: 175, shape: 'circle', lx: -14, ly: 0,   isTarget: false },
+    { ch: '',  pat: '--..-',  parent: '--..',  x: 78,  y: 235, shape: 'vbar',   lx: 0,   ly: 0,   isTarget: false },
+    { ch: ',', pat: '--..--', parent: '--..-', x: 78,  y: 295, shape: 'hbar',   lx: -20, ly: 0,   isTarget: true },
 
-    // Branch under T (x = 155) -> N
-    { ch: 'N', pat: '-.',     parent: '-',     x: 155, y: 120, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
+    // Branch under T (x = 180) -> N
+    { ch: 'N', pat: '-.',     parent: '-',     x: 180, y: 115, shape: 'circle', lx: 14,  ly: 0,   isTarget: false },
 
-    // Under N -> Dah to K, Y, (
-    { ch: 'K', pat: '-.-',    parent: '-.',    x: 125, y: 120, shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
-    { ch: 'Y', pat: '-.--',   parent: '-.-',   x: 65,  y: 120, shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
-    { ch: '',  pat: '-.--.',  parent: '-.--',  x: 65,  y: 185, shape: 'circle', lx: 0,   ly: 18,  isTarget: false },
-    { ch: '(', pat: '-.--.-', parent: '-.--.', x: 65,  y: 255, shape: 'hbar',   lx: 0,   ly: 18,  isTarget: true },
+    // Under N -> Dah to K (146, 115) -> Y (112, 115) -> ( (112, 235)
+    { ch: 'K', pat: '-.-',    parent: '-.',    x: 146, y: 115, shape: 'hbar',   lx: 0,   ly: -18, isTarget: false },
+    { ch: 'Y', pat: '-.--',   parent: '-.-',   x: 112, y: 115, shape: 'hbar',   lx: 0,   ly: -18, isTarget: false },
+    { ch: '',  pat: '-.--.',  parent: '-.--',  x: 112, y: 175, shape: 'circle', lx: 0,   ly: 0,   isTarget: false },
+    { ch: '(', pat: '-.--.-', parent: '-.--.', x: 112, y: 235, shape: 'vbar',   lx: -16, ly: 0,   isTarget: true },
 
-    // Under N -> Dit to D
-    { ch: 'D', pat: '-..',    parent: '-.',    x: 155, y: 185, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
-    { ch: 'X', pat: '-..-',   parent: '-..',   x: 125, y: 185, shape: 'hbar',   lx: 0,   ly: -16, isTarget: false },
-    { ch: '/', pat: '-..-.',  parent: '-..-',  x: 125, y: 255, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+    // Under N -> Dit to D (180, 175) -> X (146, 175) -> / (146, 235)
+    { ch: 'D', pat: '-..',    parent: '-.',    x: 180, y: 175, shape: 'circle', lx: 14,  ly: 0,   isTarget: false },
+    { ch: 'X', pat: '-..-',   parent: '-..',   x: 146, y: 175, shape: 'hbar',   lx: 0,   ly: -18, isTarget: false },
+    { ch: '/', pat: '-..-.',  parent: '-..-',  x: 146, y: 235, shape: 'circle', lx: -16, ly: 0,   isTarget: true },
 
-    // Under D -> Dit to B
-    { ch: 'B', pat: '-...',   parent: '-..',   x: 155, y: 255, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
-    { ch: '=', pat: '-...-',  parent: '-...',  x: 125, y: 325, shape: 'hbar',   lx: 0,   ly: 18,  isTarget: true },
-    { ch: '',  pat: '-....',  parent: '-...',  x: 155, y: 325, shape: 'circle', lx: 0,   ly: 18,  isTarget: false },
-    { ch: '-', pat: '-....-', parent: '-....', x: 65,  y: 325, shape: 'hbar',   lx: 0,   ly: 18,  isTarget: true },
+    // Under D -> Dit to B (180, 295) -> = (146, 295) and -.... (180, 355) -> - (146, 355)
+    { ch: 'B', pat: '-...',   parent: '-..',   x: 180, y: 295, shape: 'circle', lx: 14,  ly: 0,   isTarget: false },
+    { ch: '=', pat: '-...-',  parent: '-...',  x: 146, y: 295, shape: 'hbar',   lx: -20, ly: 0,   isTarget: true },
+    { ch: '',  pat: '-....',  parent: '-...',  x: 180, y: 355, shape: 'circle', lx: 0,   ly: 0,   isTarget: false },
+    { ch: '-', pat: '-....-', parent: '-....', x: 146, y: 355, shape: 'hbar',   lx: -20, ly: 0,   isTarget: true },
 
-    // Top Dit Spine (y = 56, x ascends right from root 210)
-    { ch: 'E', pat: '.',      parent: '',      x: 265, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: false },
-    { ch: 'I', pat: '..',     parent: '.',     x: 345, y: 56,  shape: 'circle', lx: 0,   ly: -16, isTarget: false },
+    // Top Dit Spine (y = 56, x ascends right from root 220)
+    { ch: 'E', pat: '.',      parent: '',      x: 255, y: 56,  shape: 'circle', lx: 0,   ly: -18, isTarget: false },
+    { ch: 'I', pat: '..',     parent: '.',     x: 408, y: 56,  shape: 'circle', lx: 0,   ly: -18, isTarget: false },
 
-    // Under I (x = 345) -> U, ?, ..
-    { ch: 'U', pat: '..-',    parent: '..',    x: 345, y: 120, shape: 'vbar',   lx: 16,  ly: 5,   isTarget: false },
-    { ch: '',  pat: '..--',   parent: '..-',   x: 345, y: 185, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: false },
-    { ch: '',  pat: '..--.',  parent: '..--',  x: 345, y: 255, shape: 'circle', lx: 0,   ly: 18,  isTarget: false },
-    { ch: '?', pat: '..--..', parent: '..--.', x: 345, y: 325, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+    // Under I (x = 408) -> U, ..--, ..--., ?
+    { ch: 'U', pat: '..-',    parent: '..',    x: 408, y: 115, shape: 'vbar',   lx: 14,  ly: 0,   isTarget: false },
+    { ch: '',  pat: '..--',   parent: '..-',   x: 408, y: 175, shape: 'vbar',   lx: 0,   ly: 0,   isTarget: false },
+    { ch: '',  pat: '..--.',  parent: '..--',  x: 408, y: 235, shape: 'circle', lx: 0,   ly: 0,   isTarget: false },
+    { ch: '?', pat: '..--..', parent: '..--.', x: 408, y: 315, shape: 'circle', lx: 16,  ly: 0,   isTarget: true },
 
-    // Under E (x = 265) -> A
-    { ch: 'A', pat: '.-',     parent: '.',     x: 265, y: 120, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
+    // Under E (x = 255) -> A (255, 115)
+    { ch: 'A', pat: '.-',     parent: '.',     x: 255, y: 115, shape: 'vbar',   lx: -14, ly: 0,   isTarget: false },
 
-    // Under A -> R -> L, ", +, .
-    { ch: 'R', pat: '.-.',    parent: '.-',    x: 305, y: 120, shape: 'circle', lx: 0,   ly: -16, isTarget: false },
-    { ch: 'L', pat: '.-..',   parent: '.-.',   x: 385, y: 120, shape: 'circle', lx: 16,  ly: 5,   isTarget: false },
-    { ch: '',  pat: '.-..-',  parent: '.-..',  x: 385, y: 185, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: false },
-    { ch: '"', pat: '.-..-.', parent: '.-..-', x: 385, y: 255, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+    // Under A -> R (335, 115) -> L (372, 115) -> " (372, 235) and + (335, 235) -> . (335, 315)
+    { ch: 'R', pat: '.-.',    parent: '.-',    x: 335, y: 115, shape: 'circle', lx: 0,   ly: -18, isTarget: false },
+    { ch: 'L', pat: '.-..',   parent: '.-.',   x: 372, y: 115, shape: 'circle', lx: 0,   ly: -18, isTarget: false },
+    { ch: '',  pat: '.-..-',  parent: '.-..',  x: 372, y: 175, shape: 'vbar',   lx: 0,   ly: 0,   isTarget: false },
+    { ch: '"', pat: '.-..-.', parent: '.-..-', x: 372, y: 235, shape: 'circle', lx: 15,  ly: 0,   isTarget: true },
 
-    { ch: '',  pat: '.-.-',   parent: '.-.',   x: 305, y: 185, shape: 'vbar',   lx: 0,   ly: 18,  isTarget: false },
-    { ch: '+', pat: '.-.-.',  parent: '.-.-',  x: 305, y: 255, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
-    { ch: '.', pat: '.-.-.-', parent: '.-.-.', x: 305, y: 325, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+    { ch: '',  pat: '.-.-',   parent: '.-.',   x: 335, y: 175, shape: 'vbar',   lx: 0,   ly: 0,   isTarget: false },
+    { ch: '+', pat: '.-.-.',  parent: '.-.-',  x: 335, y: 235, shape: 'circle', lx: 15,  ly: 0,   isTarget: true },
+    { ch: '.', pat: '.-.-.-', parent: '.-.-.', x: 335, y: 315, shape: 'vbar',   lx: 16,  ly: 0,   isTarget: true },
 
-    // Under A -> W -> P, @, J, 1, '
-    { ch: 'W', pat: '.--',    parent: '.-',    x: 265, y: 185, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
-    { ch: 'P', pat: '.--.',   parent: '.--',   x: 285, y: 185, shape: 'circle', lx: 0,   ly: -16, isTarget: false },
-    { ch: '',  pat: '.--.-',  parent: '.--.',  x: 285, y: 255, shape: 'hbar',   lx: 0,   ly: 18,  isTarget: false },
-    { ch: '@', pat: '.--.-.', parent: '.--.-', x: 285, y: 325, shape: 'circle', lx: 0,   ly: 18,  isTarget: true },
+    // Under A -> W (255, 175) -> P (292, 175) -> @ (292, 295) and J (255, 235) -> 1 (255, 295) -> ' (255, 355)
+    { ch: 'W', pat: '.--',    parent: '.-',    x: 255, y: 175, shape: 'vbar',   lx: -14, ly: 0,   isTarget: false },
+    { ch: 'P', pat: '.--.',   parent: '.--',   x: 292, y: 175, shape: 'circle', lx: 0,   ly: -18, isTarget: false },
+    { ch: '',  pat: '.--.-',  parent: '.--.',  x: 292, y: 235, shape: 'vbar',   lx: 0,   ly: 0,   isTarget: false },
+    { ch: '@', pat: '.--.-.', parent: '.--.-', x: 292, y: 295, shape: 'circle', lx: 16,  ly: 0,   isTarget: true },
 
-    { ch: 'J', pat: '.---',   parent: '.--',   x: 265, y: 255, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
-    { ch: '1', pat: '.----',  parent: '.---',  x: 265, y: 325, shape: 'vbar',   lx: -16, ly: 5,   isTarget: false },
-    { ch: "'", pat: '.----.', parent: '.----', x: 265, y: 375, shape: 'circle', lx: 0,   ly: 18,  isTarget: true }
+    { ch: 'J', pat: '.---',   parent: '.--',   x: 255, y: 235, shape: 'vbar',   lx: -14, ly: 0,   isTarget: false },
+    { ch: '1', pat: '.----',  parent: '.---',  x: 255, y: 295, shape: 'vbar',   lx: -14, ly: 0,   isTarget: false },
+    { ch: "'", pat: '.----.', parent: '.----', x: 255, y: 355, shape: 'circle', lx: 16,  ly: 0,   isTarget: true }
   ];
 
   const TREE_SETS = {
@@ -3896,8 +3921,8 @@ b { font-weight: 650; }
     num: {
       id: 'num',
       title: '123',
-      viewBox: '0 0 420 370',
-      root: { x: 210, y: 56 },
+      viewBox: '0 0 445 360',
+      root: { x: 220, y: 56 },
       hdrLeft: 'MORSE',
       hdrRight: 'NUMBERS',
       nodes: NUM_LAYOUT,
@@ -3906,8 +3931,8 @@ b { font-weight: 650; }
     punct: {
       id: 'punct',
       title: '.,?/',
-      viewBox: '0 0 420 400',
-      root: { x: 210, y: 56 },
+      viewBox: '0 0 445 390',
+      root: { x: 220, y: 56 },
       hdrLeft: 'MORSE',
       hdrRight: 'PUNCTUATION',
       nodes: PUNCT_LAYOUT,
@@ -4010,11 +4035,13 @@ b { font-weight: 650; }
 
         const children = [shapeEl];
         if (n.ch) {
+          const isSide = n.lx && !n.ly;
           const labelEl = svgEl('text', {
             class: 't-label' + (isTarget ? ' target-label' : ''),
             x: n.x + (n.lx || 0),
             y: n.y + (n.ly || 0),
-            'text-anchor': 'middle'
+            'text-anchor': isSide ? (n.lx < 0 ? 'end' : 'start') : 'middle',
+            'dominant-baseline': n.ly === 0 || n.ly === -18 ? 'central' : 'auto'
           }, [n.ch]);
           children.push(labelEl);
         }
@@ -4212,8 +4239,9 @@ b { font-weight: 650; }
         const th = thresholds(st.sendWpm || 12);
         const ms = sym === '.' ? th.unitMs : th.unitMs * 3;
         MT.Audio.ensure();
-        MT.Audio.toneStart();
-        setTimeout(() => { if (!isDown) MT.Audio.toneStop(); }, Math.max(40, Math.round(ms)));
+        MT.Audio.toneStart({ noHaptic: true });
+        MT.Audio.tapHaptic(sym === '.' ? 45 : 140);
+        setTimeout(() => { if (!isDown) MT.Audio.toneStop({ noHaptic: true }); }, Math.max(40, Math.round(ms)));
       }
       updateVisuals();
       scheduleCommit();
