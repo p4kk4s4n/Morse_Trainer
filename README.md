@@ -116,6 +116,20 @@ Open the **Progress** tab (bar chart icon) to inspect your stats:
 
 ---
 
+## 🔄 Updating to a New Version Deployed on GitHub
+
+When a new version is pushed to GitHub Pages, you can update directly from within the app without losing your training progress, streak, or custom settings:
+
+1. Tap the **Settings** tab (⚙️ gear icon).
+2. Scroll down to the **"Data & offline"** section. You can see your currently installed version tag (e.g. `Version v14`).
+3. Tap **"🔄 Check for update & reload"**.
+4. The app checks GitHub for the latest release, clears the offline file cache, and refreshes the app:
+   - If an update is detected, a toast notification confirms: **`Update completed to version vX`**.
+   - If you are already up-to-date, a toast confirms: **`Version vX is latest release already`**.
+   - All your lesson progress, streaks, badges, and settings in local storage are **100% preserved**.
+
+---
+
 ## 💾 How to Backup & Restore Your Progress
 
 Your lesson progress, streaks, milestone badges, and spaced repetition memory boxes are saved directly in your browser's local storage (`localStorage`). This means your progress remains completely safe across software updates on GitHub Pages!
