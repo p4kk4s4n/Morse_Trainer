@@ -116,6 +116,18 @@ b { font-weight: 650; }
 .mode-tx { display: flex; flex-direction: column; flex: 1; }
 .mode-tx small { color: var(--muted); }
 .chev { font-size: 1.8rem; color: var(--muted); }
+.mode-hero { flex-direction: column; align-items: stretch; gap: 10px; padding: 16px; border: 2px solid var(--accent); box-shadow: 0 0 18px rgba(56, 189, 248, .22); }
+.mode-hero .hero-head { display: flex; align-items: center; gap: 14px; }
+.mode-hero .mode-ic { font-size: 2.6rem; width: 48px; height: 48px; }
+.mode-hero .mode-tx b { font-size: 1.25rem; }
+.hero-ribbon { align-self: flex-start; background: var(--accent); color: var(--accent-ink); font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 3px 10px; border-radius: 99px; }
+.lk-chips { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.lk-chip { min-width: 26px; height: 28px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--panel2); border: 1px solid var(--accent); font-weight: 700; font-size: .9rem; }
+.lk-chip.next { border-style: dashed; border-color: var(--warn); color: var(--warn); background: transparent; }
+.lk-next-tag { font-size: .78rem; color: var(--warn); font-weight: 700; }
+.hero-hint { font-size: .82rem; color: var(--muted); margin: 0; }
+.hero-cta { align-self: stretch; text-align: center; background: var(--accent); color: var(--accent-ink); font-weight: 800; border-radius: 10px; padding: 10px; }
+.section-label { color: var(--muted); font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; margin: 14px 4px 4px; }
 .big-num { font-size: 1.5rem; }
 
 /* chips */
@@ -1924,6 +1936,49 @@ b { font-weight: 650; }
     const totalBadges = MT.BADGES.length + MT.QSO_BADGES.length;
     const latestBadge = allEarned.length ? allEarned[allEarned.length - 1] : null;
 
+    const modeIcon = (m) => (typeof m.icon === 'function' ? m.icon() : m.icon);
+    const modeCard = (m) => h('button', {
+      class: 'card mode' + (m.soon ? ' soon' : ''),
+      'data-mode': m.id,
+      disabled: m.soon ? 'disabled' : null,
+      onclick: () => { MT.Audio.ensure(); App.go(m.screen); }
+    },
+      h('span', { class: 'mode-ic' }, modeIcon(m)),
+      h('span', { class: 'mode-tx' }, h('b', {}, m.title), h('small', {}, m.soon ? 'Coming soon' : m.tagline())),
+      m.soon ? null : h('span', { class: 'chev' }, '›'));
+
+    /** Koch Trainer hero tile: the main path, and the only way to unlock new letters. */
+    const kochHero = (m) => {
+      const k = S.data.koch;
+      const level = k.level;
+      const unlockedChars = MT.KOCH.slice(0, level);
+      const next = MT.KOCH[level] || null;
+      const last = k.last && k.last.level === level ? k.last : null;
+      const thr = S.settings.threshold;
+      return h('button', {
+        class: 'card mode mode-hero',
+        'data-mode': m.id,
+        onclick: () => { MT.Audio.ensure(); App.go(m.screen); }
+      },
+        h('span', { class: 'hero-ribbon' }, next ? '★ Start here · unlocks new letters' : '✓ All ' + MT.KOCH.length + ' characters unlocked'),
+        h('span', { class: 'hero-head' },
+          h('span', { class: 'mode-ic' }, modeIcon(m)),
+          h('span', { class: 'mode-tx' }, h('b', {}, m.title), h('small', {}, m.tagline())),
+          h('span', { class: 'chev' }, '›')),
+        h('span', { class: 'lk-chips' },
+          unlockedChars.map((c) => h('span', { class: 'lk-chip' }, c)),
+          next ? h('span', { class: 'lk-chip next', title: 'Next letter to unlock' }, '🔒 ' + next) : null,
+          next ? h('span', { class: 'lk-next-tag' }, '← next') : null),
+        next ? UI.bar(last ? last.acc : 0, last && last.acc * 100 >= thr ? 'good' : '') : null,
+        next ? h('p', { class: 'hero-hint' }, (last ? 'Last round ' + Math.round(last.acc * 100) + '% · ' : '') +
+          'Reach ' + thr + '% over ' + S.settings.groupsPerRound + ' groups to unlock “' + next + '”') : null,
+        h('span', { class: 'hero-cta' }, '▶ Continue Lesson ' + (level - 1)));
+    };
+
+    const kochMode = App.modes.find((m) => m.id === 'koch');
+    const qsoMode = App.modes.find((m) => m.id === 'qso');
+    const others = App.modes.filter((m) => m.id !== 'koch' && m.id !== 'qso');
+
     root.append(
       h('header', { class: 'top' },
         h('div', {}, h('h1', {}, 'Morse Trainer'), h('p', { class: 'muted' }, 'Learn by ear, one letter at a time')),
@@ -1938,17 +1993,10 @@ b { font-weight: 650; }
         today.done ? h('p', { class: 'small good-text' }, '✓ Daily goal reached — nice work!')
                    : h('p', { class: 'small muted' }, 'Practise ' + S.settings.goalMin + ' minutes a day to build your streak.'),
         UI.badgeStrip()),
-      h('div', { class: 'modes' }, App.modes.map((m) => {
-        const ic = typeof m.icon === 'function' ? m.icon() : m.icon;
-        return h('button', {
-          class: 'card mode' + (m.soon ? ' soon' : ''),
-          disabled: m.soon ? 'disabled' : null,
-          onclick: () => { MT.Audio.ensure(); App.go(m.screen); }
-        },
-          h('span', { class: 'mode-ic' }, ic),
-          h('span', { class: 'mode-tx' }, h('b', {}, m.title), h('small', {}, m.soon ? 'Coming soon' : m.tagline())),
-          m.soon ? null : h('span', { class: 'chev' }, '›'));
-      }))
+      kochMode ? kochHero(kochMode) : null,
+      qsoMode ? h('div', { class: 'modes' }, modeCard(qsoMode)) : null,
+      others.length ? h('div', { class: 'section-label' }, 'More ways to practise') : null,
+      h('div', { class: 'modes' }, others.map(modeCard))
     );
     const extras = [
       App.installEvent ? h('button', {
