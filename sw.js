@@ -1,5 +1,5 @@
 /* Offline support for the single-file app: precache index.html, serve cache-first, refresh in background. */
-const VERSION = 'v14';                      // bump when index.html changes to force an update
+const VERSION = 'v15';                      // bump when index.html changes to force an update
 const CACHE = 'morse-trainer-' + VERSION;
 const ASSETS = [
   './',
