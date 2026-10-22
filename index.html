@@ -412,6 +412,35 @@ b { font-weight: 650; }
 .toast.warn { border-color: var(--warn); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(-12px) scale(.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes toast-out { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(-8px) scale(.95); } }
+
+/* translator (mode-switched keyer & visual breakdown) */
+.tr-seg { margin-bottom: 12px; }
+.tr-box { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 1.05rem; min-height: 54px; color: var(--text); line-height: 1.45; word-break: break-word; }
+.tr-box.morse-font { font-size: 1.08rem; letter-spacing: .06em; color: var(--accent); font-weight: 700; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tr-textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: 600 1.02rem/1.45 ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--text); resize: vertical; min-height: 68px; outline: none; }
+.tr-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(56, 189, 248, .2); }
+.tr-textarea.morse-input { color: var(--accent); letter-spacing: .05em; min-height: 52px; margin-top: 8px; font-size: .95rem; }
+.tr-cur-pat { background: rgba(56, 189, 248, .22); color: #fff; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--accent); display: inline-block; }
+.tr-cursor { color: var(--accent); font-weight: 800; animation: tr-blink 1s step-end infinite; }
+@keyframes tr-blink { 50% { opacity: 0; } }
+.tr-char-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.tr-char-card { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 6px 9px; display: flex; flex-direction: column; align-items: center; min-width: 52px; gap: 2px; text-align: center; transition: border-color .12s, background .12s, transform .08s; }
+.tr-char-card:active { transform: scale(.96); }
+.tr-char-card.active { border-color: var(--accent); background: rgba(56, 189, 248, .18); box-shadow: 0 0 12px rgba(56, 189, 248, .28); }
+.tr-char-card.word-sep { background: transparent; border-style: dashed; min-width: 28px; justify-content: center; color: var(--muted); cursor: default; font-weight: 700; }
+.tr-char-card b { font-size: 1.05rem; color: var(--text); line-height: 1.1; }
+.tr-char-card .tr-pat { color: var(--accent); font-weight: 800; font-size: .88rem; letter-spacing: 1.5px; font-family: ui-monospace, Consolas, monospace; }
+.tr-char-card small { font-size: .66rem; color: var(--muted); }
+.tr-paddle-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.tr-paddle-btn { background: radial-gradient(circle at 50% 30%, #1e3154 0%, var(--panel) 80%); border: 2px solid var(--accent); border-radius: 14px; padding: 14px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; user-select: none; touch-action: manipulation; box-shadow: 0 4px 16px rgba(56, 189, 248, .15); transition: transform .05s, background .1s; }
+.tr-paddle-btn:active, .tr-paddle-btn.active { transform: scale(.97); background: var(--accent); color: var(--accent-ink); }
+.tr-paddle-btn:active small, .tr-paddle-btn.active small, .tr-paddle-btn:active .tr-sym, .tr-paddle-btn.active .tr-sym { color: var(--accent-ink); }
+.tr-paddle-btn .tr-sym { color: var(--accent); font-size: 1.35rem; line-height: 1; }
+.tr-paddle-btn b { font-size: 1.05rem; letter-spacing: .04em; }
+.tr-paddle-btn small { font-size: .74rem; color: var(--muted); }
+.tr-actions-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tr-actions-row .btn { flex: 1; min-width: 70px; }
+.tr-samples { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -427,7 +456,7 @@ b { font-weight: 650; }
 (function (g) {
   const MT = (g.MT = g.MT || {});
 
-  MT.APP_VERSION = 'v14';
+  MT.APP_VERSION = 'v15';
 
   MT.CODE = {
     A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....',
@@ -761,6 +790,75 @@ b { font-weight: 650; }
   MT.sortChars = function (arr) {
     const rank = (c) => (/[A-Z]/.test(c) ? 0 : /[0-9]/.test(c) ? 1 : 2);
     return arr.slice().sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : 1));
+  };
+
+  /**
+   * Convert plain text to space-separated Morse code with " / " between words.
+   * Unknown characters are skipped unless opts.unknown is specified.
+   */
+  MT.textToMorse = function (text, opts) {
+    opts = opts || {};
+    if (!text) return '';
+    const words = String(text).toUpperCase().trim().split(/\s+/).filter(Boolean);
+    const outWords = [];
+    for (let w = 0; w < words.length; w++) {
+      const codes = [];
+      for (const ch of words[w]) {
+        if (MT.CODE[ch]) codes.push(MT.CODE[ch]);
+        else if (opts.unknown) codes.push(opts.unknown);
+      }
+      if (codes.length) outWords.push(codes.join(' '));
+    }
+    return outWords.join(' / ');
+  };
+
+  /**
+   * Convert Morse code ('.' / '-' or '·' / '−', space between letters, '/' between words) to plain text.
+   * Unknown non-empty Morse tokens map to '?'.
+   */
+  MT.morseToText = function (morse) {
+    if (!morse) return '';
+    const norm = String(morse)
+      .replace(/[·•*]/g, '.')
+      .replace(/[−–—_]/g, '-')
+      .replace(/\|/g, '/')
+      .trim();
+    if (!norm) return '';
+    const rawWords = norm.split(/\s*\/\s*|\s{3,}/);
+    const outWords = [];
+    for (let w = 0; w < rawWords.length; w++) {
+      const tokens = rawWords[w].trim().split(/\s+/).filter(Boolean);
+      if (!tokens.length) continue;
+      const chars = tokens.map((tok) => MT.DECODE[tok] || '?');
+      outWords.push(chars.join(''));
+    }
+    return outWords.join(' ');
+  };
+
+  /**
+   * Tokenize plain text into visual breakdown items for the Translator strip.
+   * playIndex aligns 1-to-1 with MT.Audio.play(text, { onChar(index, ch) }).
+   */
+  MT.tokenizeTranslation = function (text) {
+    if (!text) return [];
+    const words = String(text).toUpperCase().trim().split(/\s+/).filter(Boolean);
+    const items = [];
+    let playIdx = 0;
+    for (let w = 0; w < words.length; w++) {
+      if (w > 0) items.push({ type: 'sep', ch: '/' });
+      for (const ch of words[w]) {
+        const code = MT.CODE[ch] || null;
+        if (!code && ch !== '?') continue;
+        items.push({
+          type: 'char',
+          ch: ch,
+          code: code || '?',
+          say: code ? MT.say(code).replace(/\s+/g, '-') : 'unknown',
+          playIndex: code ? playIdx++ : -1
+        });
+      }
+    }
+    return items;
   };
 })(globalThis);
 
@@ -1584,6 +1682,7 @@ b { font-weight: 650; }
 
   const TABS = [
     { id: 'home', icon: '🏠', label: 'Home' },
+    { id: 'translate', icon: '🔄', label: 'Translate' },
     { id: 'chart', icon: '🔤', label: 'Chart' },
     { id: 'stats', icon: '📊', label: 'Stats' },
     { id: 'settings', icon: '⚙️', label: 'Settings' }
@@ -4853,6 +4952,522 @@ b { font-weight: 650; }
     id: 'tree', icon: makeTreeIcon, title: 'Morse Tree', screen: 'tree',
     tagline: () => 'Visual branching chart · 1-button or 2-button real-time practice'
   });
+})(globalThis);
+
+/* ==================== translate.js ==================== */
+/* Option 2: 2-Sided Morse Translator (Text -> Morse & Morse -> Text Keyer + Visual Breakdown). */
+(function (g) {
+  const MT = (g.MT = g.MT || {});
+  const h = MT.h, App = MT.App, S = MT.Store;
+
+  function thresholds(wpm) {
+    const unitMs = 1200 / (wpm || 15);
+    return {
+      unitMs: unitMs,
+      commitMs: Math.max(420, Math.round(unitMs * 4.2))
+    };
+  }
+
+  function copyToClipboard(str, label) {
+    if (!str) {
+      MT.UI.toast('Nothing to copy yet', 'warn');
+      return;
+    }
+    const done = () => MT.UI.toast(label + ' copied to clipboard', 'good');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(str).then(done, () => { prompt('Copy ' + label + ':', str); });
+    } else {
+      prompt('Copy ' + label + ':', str);
+    }
+  }
+
+  App.registerScreen('translate', (root) => {
+    const st = S.settings;
+    if (!st.translateMode) st.translateMode = 'morse2text';
+    if (!st.sendWpm) st.sendWpm = 12;
+
+    let mode = st.translateMode; // 'text2morse' | 'morse2text'
+    let textVal = st.translateText != null ? st.translateText : 'CQ DE W1AW';
+    let morseCommitted = MT.textToMorse(textVal);
+    let curPat = '';
+    let commitTimer = null;
+    let playHandle = null;
+    let playingIdx = -1;
+    let activeSec = 0;
+
+    function flushStreakTime() {
+      if (activeSec > 0) {
+        const sec = activeSec;
+        activeSec = 0;
+        S.recordResult({ chars: {}, confusions: {}, groups: 0, activeSec: sec, correct: 0, total: 0, accuracy: 0 }, { srs: false });
+      }
+    }
+
+    function stopPlay() {
+      if (playHandle) {
+        playHandle.stop();
+        playHandle = null;
+      }
+      playingIdx = -1;
+      updatePlayButtons();
+      updateChipHighlights();
+    }
+
+    let playBtnEl = null;
+    let chipsBox = null;
+    let decodedBox = null;
+    let morseOutBox = null;
+    let morseBufferBox = null;
+    let morseRawInp = null;
+    let textInp = null;
+
+    function updatePlayButtons() {
+      if (!playBtnEl) return;
+      playBtnEl.textContent = playHandle ? '⏹ Stop' : '🔊 Hear All';
+      playBtnEl.classList.toggle('primary', !!playHandle);
+    }
+
+    function updateChipHighlights() {
+      if (!chipsBox) return;
+      const cards = chipsBox.querySelectorAll('.tr-char-card[data-play-idx]');
+      const total = cards.length;
+      cards.forEach((c, idx) => {
+        const pIdx = Number(c.getAttribute('data-play-idx'));
+        const isPlaying = playHandle && pIdx === playingIdx;
+        const isLatestInKeyer = !playHandle && mode === 'morse2text' && idx === total - 1 && total > 0;
+        c.classList.toggle('active', isPlaying || isLatestInKeyer);
+      });
+    }
+
+    function renderChips() {
+      if (!chipsBox) return;
+      chipsBox.innerHTML = '';
+      const tokens = MT.tokenizeTranslation(textVal);
+      if (!tokens.length) {
+        chipsBox.append(h('span', { class: 'muted small' }, 'Character breakdown cards will appear here…'));
+        return;
+      }
+      tokens.forEach((tk) => {
+        if (tk.type === 'sep') {
+          chipsBox.append(h('div', { class: 'tr-char-card word-sep', 'data-tr-sep': '/' }, '/'));
+        } else {
+          const card = h('button', {
+            class: 'tr-char-card',
+            'data-tr-chip': tk.ch,
+            'data-play-idx': tk.playIndex,
+            title: 'Tap to hear ' + tk.ch + ' (' + tk.code + ')',
+            onclick: () => {
+              if (!MT.CODE[tk.ch]) return;
+              stopPlay();
+              MT.Audio.ensure();
+              playingIdx = tk.playIndex;
+              updateChipHighlights();
+              const hd = (playHandle = MT.Audio.play(tk.ch, { lead: 0.02 }));
+              updatePlayButtons();
+              hd.done.then(() => {
+                if (playHandle === hd) {
+                  playHandle = null;
+                  playingIdx = -1;
+                  updatePlayButtons();
+                  updateChipHighlights();
+                }
+              });
+            }
+          },
+            h('b', {}, tk.ch),
+            h('span', { class: 'tr-pat' }, tk.code),
+            h('small', {}, tk.say));
+          chipsBox.append(card);
+        }
+      });
+      updateChipHighlights();
+    }
+
+    function playAll() {
+      if (playHandle) {
+        stopPlay();
+        return;
+      }
+      if (curPat) commitChar();
+      const clean = (textVal || '').trim();
+      if (!clean) return;
+      MT.Audio.ensure();
+      playingIdx = 0;
+      const hd = (playHandle = MT.Audio.play(clean, {
+        lead: 0.05,
+        onChar: (idx) => {
+          playingIdx = idx;
+          updateChipHighlights();
+        }
+      }));
+      updatePlayButtons();
+      updateChipHighlights();
+      hd.done.then(() => {
+        if (playHandle === hd) {
+          playHandle = null;
+          playingIdx = -1;
+          updatePlayButtons();
+          updateChipHighlights();
+        }
+      });
+    }
+
+    function syncFromText(newText, skipInputUpdate) {
+      textVal = newText;
+      st.translateText = textVal;
+      S.save();
+      morseCommitted = MT.textToMorse(textVal);
+      curPat = '';
+      if (textInp && !skipInputUpdate) textInp.value = textVal;
+      if (morseOutBox) {
+        morseOutBox.textContent = morseCommitted || 'Morse code ( . - / ) will appear here…';
+        morseOutBox.classList.toggle('muted', !morseCommitted);
+      }
+      renderChips();
+    }
+
+    function updateMorseViews(skipRawInput) {
+      if (decodedBox) {
+        decodedBox.innerHTML = '';
+        if (textVal) {
+          decodedBox.append(document.createTextNode(textVal));
+        } else {
+          decodedBox.append(h('span', { class: 'muted small' }, 'Tap · DIT / − DAH or type Morse below to decode… '));
+        }
+        decodedBox.append(h('span', { class: 'tr-cursor' }, '_'));
+      }
+      if (morseBufferBox) {
+        morseBufferBox.innerHTML = '';
+        if (!morseCommitted && !curPat) {
+          morseBufferBox.append(h('span', { class: 'muted small' }, 'Tap paddles or type . - / …'));
+        } else {
+          if (morseCommitted) {
+            morseBufferBox.append(document.createTextNode(morseCommitted + (curPat ? ' ' : '')));
+          }
+          if (curPat) {
+            morseBufferBox.append(h('span', { class: 'tr-cur-pat', 'data-tr-cur-pat': curPat }, curPat));
+          }
+        }
+      }
+      if (morseRawInp && !skipRawInput) {
+        morseRawInp.value = morseCommitted + (curPat ? (morseCommitted ? ' ' : '') + curPat : '');
+      }
+      renderChips();
+    }
+
+    function syncFromMorse(newMorseCommitted, skipRawInput) {
+      morseCommitted = (newMorseCommitted || '').trim().replace(/\s+/g, ' ');
+      textVal = MT.morseToText(morseCommitted);
+      st.translateText = textVal;
+      S.save();
+      updateMorseViews(skipRawInput);
+    }
+
+    function scheduleCommit() {
+      clearTimeout(commitTimer);
+      const th = thresholds(st.sendWpm || 12);
+      commitTimer = setTimeout(commitChar, th.commitMs);
+    }
+
+    function stepSymbol(sym, playTone) {
+      if (sym !== '.' && sym !== '-') return;
+      stopPlay();
+      clearTimeout(commitTimer);
+      if (curPat.length < 7) curPat += sym;
+      if (playTone !== false) {
+        const th = thresholds(st.sendWpm || 12);
+        const ms = sym === '.' ? th.unitMs : th.unitMs * 3;
+        MT.Audio.ensure();
+        MT.Audio.toneStart({ noHaptic: true });
+        MT.Audio.tapHaptic(sym === '.' ? 45 : 140);
+        setTimeout(() => MT.Audio.toneStop({ noHaptic: true }), Math.max(40, Math.round(ms)));
+      }
+      updateMorseViews(false);
+      scheduleCommit();
+    }
+
+    function commitChar() {
+      clearTimeout(commitTimer);
+      if (!curPat) return;
+      const pat = curPat;
+      curPat = '';
+      if (!morseCommitted) {
+        morseCommitted = pat;
+      } else if (morseCommitted.endsWith('/')) {
+        morseCommitted = morseCommitted + ' ' + pat;
+      } else {
+        morseCommitted = morseCommitted + ' ' + pat;
+      }
+      syncFromMorse(morseCommitted, false);
+    }
+
+    function insertWordSpace() {
+      clearTimeout(commitTimer);
+      if (curPat) commitChar();
+      if (!morseCommitted || morseCommitted.endsWith('/')) return;
+      morseCommitted = morseCommitted + ' /';
+      syncFromMorse(morseCommitted, false);
+    }
+
+    function undoMorse() {
+      clearTimeout(commitTimer);
+      if (curPat) {
+        curPat = curPat.slice(0, -1);
+        updateMorseViews(false);
+        return;
+      }
+      if (!morseCommitted) return;
+      const parts = morseCommitted.trim().split(/\s+/);
+      parts.pop();
+      syncFromMorse(parts.join(' '), false);
+    }
+
+    function clearAll() {
+      clearTimeout(commitTimer);
+      stopPlay();
+      curPat = '';
+      morseCommitted = '';
+      textVal = '';
+      st.translateText = '';
+      S.save();
+      if (mode === 'text2morse') syncFromText('', false);
+      else updateMorseViews(false);
+    }
+
+    const stageBox = h('div', {});
+    const modeBtns = [];
+
+    function switchMode(newMode) {
+      if (newMode !== 'text2morse' && newMode !== 'morse2text') return;
+      if (curPat) commitChar();
+      stopPlay();
+      mode = newMode;
+      st.translateMode = mode;
+      S.save();
+      modeBtns.forEach((b) => b.el.classList.toggle('active', b.id === mode));
+      renderStage();
+    }
+
+    function renderStage() {
+      stageBox.innerHTML = '';
+      playBtnEl = null; chipsBox = null; decodedBox = null;
+      morseOutBox = null; morseBufferBox = null; morseRawInp = null; textInp = null;
+
+      if (mode === 'text2morse') {
+        textInp = h('textarea', {
+          class: 'tr-textarea',
+          'data-tr-text': '',
+          rows: 2,
+          placeholder: 'Type or paste plain text, numbers, or callsigns (e.g. CQ DE W1AW)…',
+          value: textVal,
+          oninput: (e) => {
+            stopPlay();
+            syncFromText(e.target.value, true);
+          }
+        });
+        textInp.value = textVal;
+
+        morseOutBox = h('div', {
+          class: 'tr-box morse-font' + (morseCommitted ? '' : ' muted'),
+          'data-tr-morse-out': ''
+        }, morseCommitted || 'Morse code ( . - / ) will appear here…');
+
+        playBtnEl = h('button', {
+          class: 'btn small',
+          'data-tr-action': 'play',
+          onclick: playAll
+        }, '🔊 Hear All');
+
+        chipsBox = h('div', { class: 'tr-char-strip', 'data-tr-chips': '' });
+
+        const sampleRow = h('div', { class: 'tr-samples' },
+          h('span', { class: 'muted small' }, 'Samples:'),
+          ['SOS', 'CQ DE W1AW', '73 TU', 'HELLO'].map((s) =>
+            h('button', {
+              class: 'btn small',
+              'data-tr-sample': s,
+              onclick: () => { stopPlay(); syncFromText(s, false); }
+            }, s)));
+
+        stageBox.append(
+          h('section', { class: 'card' },
+            h('div', { class: 'row between', style: 'margin-bottom:6px' },
+              h('b', {}, 'Plain Text Input'),
+              h('div', { class: 'row' },
+                h('button', { class: 'btn small', 'data-tr-copy': 'text', onclick: () => copyToClipboard(textVal, 'Text') }, '📋 Copy'),
+                h('button', { class: 'btn small', 'data-tr-action': 'clear', onclick: clearAll }, '✕ Clear'))),
+            textInp,
+            sampleRow),
+          h('section', { class: 'card' },
+            h('div', { class: 'row between', style: 'margin-bottom:6px' },
+              h('b', {}, 'Morse Code & Sound Breakdown'),
+              h('div', { class: 'row' },
+                playBtnEl,
+                h('button', { class: 'btn small', 'data-tr-copy': 'morse', onclick: () => copyToClipboard(morseCommitted, 'Morse code') }, '📋 Copy'))),
+            morseOutBox,
+            chipsBox,
+            h('p', { class: 'muted small', style: 'margin-top:8px' }, 'Tip: tap any character card above to hear its individual Morse rhythm.'))
+        );
+
+        renderChips();
+      } else {
+        // Option 2: Morse -> Text (Keyer) & Visual Breakdown
+        decodedBox = h('div', { class: 'tr-box', 'data-tr-decoded': '', style: 'font-size:1.15rem;font-weight:700' });
+        playBtnEl = h('button', {
+          class: 'btn small',
+          'data-tr-action': 'play',
+          onclick: playAll
+        }, '🔊 Hear All');
+        chipsBox = h('div', { class: 'tr-char-strip', 'data-tr-chips': '' });
+
+        morseBufferBox = h('div', { class: 'tr-box morse-font', 'data-tr-morse-buffer': '' });
+
+        const ditBtn = h('button', {
+          class: 'tr-paddle-btn',
+          'data-tr-pad': '.',
+          onclick: () => stepSymbol('.', true)
+        },
+          h('span', { class: 'tr-sym' }, '●'),
+          h('b', {}, '· DIT'),
+          h('small', {}, 'Tap or [ . ] key'));
+
+        const dahBtn = h('button', {
+          class: 'tr-paddle-btn',
+          'data-tr-pad': '-',
+          onclick: () => stepSymbol('-', true)
+        },
+          h('span', { class: 'tr-sym' }, '▬'),
+          h('b', {}, '− DAH'),
+          h('small', {}, 'Tap or [ - ] key'));
+
+        morseRawInp = h('textarea', {
+          class: 'tr-textarea morse-input',
+          'data-tr-morse-input': '',
+          rows: 1,
+          placeholder: 'Or type / paste Morse code directly here (e.g. -.-. --.- / -.. .)…',
+          oninput: (e) => {
+            clearTimeout(commitTimer);
+            curPat = '';
+            syncFromMorse(e.target.value, true);
+          }
+        });
+
+        stageBox.append(
+          h('section', { class: 'card' },
+            h('div', { class: 'row between', style: 'margin-bottom:6px' },
+              h('b', {}, 'Decoded Text Output'),
+              h('div', { class: 'row' },
+                playBtnEl,
+                h('button', { class: 'btn small', 'data-tr-copy': 'text', onclick: () => copyToClipboard(textVal, 'Decoded text') }, '📋 Copy'))),
+            decodedBox,
+            chipsBox),
+          h('section', { class: 'card' },
+            h('div', { class: 'row between', style: 'margin-bottom:6px' },
+              h('b', {}, 'Morse Input Buffer'),
+              h('span', { class: 'muted small' }, 'Auto-commits on pause or tap Space')),
+            morseBufferBox,
+            h('div', { class: 'tr-paddle-two' }, ditBtn, dahBtn),
+            h('div', { class: 'tr-actions-row' },
+              h('button', { class: 'btn small', 'data-tr-action': 'commit', onclick: () => { if (curPat) commitChar(); else insertWordSpace(); } }, '␣ Commit Letter'),
+              h('button', { class: 'btn small', 'data-tr-action': 'word', onclick: insertWordSpace }, '/ Word Space'),
+              h('button', { class: 'btn small', 'data-tr-action': 'undo', onclick: undoMorse }, '⌫ Undo'),
+              h('button', { class: 'btn small', 'data-tr-action': 'clear', onclick: clearAll }, '✕ Clear')),
+            morseRawInp)
+        );
+
+        updateMorseViews(false);
+      }
+    }
+
+    const modeSeg = h('div', { class: 'seg tr-seg' }, [
+      { id: 'text2morse', label: '🔤 Text → Morse' },
+      { id: 'morse2text', label: '📡 Morse → Text (Keyer)' }
+    ].map((opt) => {
+      const b = h('button', {
+        class: 'seg-btn' + (mode === opt.id ? ' active' : ''),
+        'data-tr-mode': opt.id,
+        onclick: () => switchMode(opt.id)
+      }, opt.label);
+      modeBtns.push({ id: opt.id, el: b });
+      return b;
+    }));
+
+    root.append(
+      h('header', { class: 'top' },
+        h('div', {},
+          h('h1', {}, 'Morse Translator'),
+          h('p', { class: 'muted' }, '2-way Text ↔ Morse converter & keyer')),
+        h('span', { class: 'badge' }, st.charWpm + ' WPM')),
+      modeSeg,
+      stageBox
+    );
+
+    renderStage();
+
+    function onKeyDown(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const tag = e.target && e.target.tagName;
+      if (tag === 'TEXTAREA' || tag === 'INPUT') return;
+      if (mode !== 'morse2text') return;
+
+      if (e.key === '.' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (!e.repeat) stepSymbol('.', true);
+      } else if (e.key === '-' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        if (!e.repeat) stepSymbol('-', true);
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (curPat) commitChar();
+        else insertWordSpace();
+      } else if (e.key === '/') {
+        e.preventDefault();
+        insertWordSpace();
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        undoMorse();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        clearAll();
+      }
+    }
+
+    const ticker = setInterval(() => {
+      if (document.visibilityState === 'visible') activeSec++;
+    }, 1000);
+    document.addEventListener('keydown', onKeyDown);
+
+    MT.Translate = {
+      debug: {
+        get state() {
+          return {
+            mode: mode,
+            text: textVal,
+            morse: morseCommitted,
+            curPat: curPat
+          };
+        },
+        setMode: switchMode,
+        setText: (t) => syncFromText(t, false),
+        setMorse: (m) => { curPat = ''; syncFromMorse(m, false); },
+        stepSymbol: (s) => stepSymbol(s, false),
+        commit: commitChar,
+        wordSpace: insertWordSpace,
+        undo: undoMorse,
+        clear: clearAll,
+        flushStreak: flushStreakTime
+      }
+    };
+
+    return function cleanup() {
+      clearInterval(ticker);
+      clearTimeout(commitTimer);
+      stopPlay();
+      document.removeEventListener('keydown', onKeyDown);
+      flushStreakTime();
+      if (MT.Translate) MT.Translate.debug = null;
+    };
+  }, { tab: 'translate' });
 })(globalThis);
 
 /* ==================== boot ==================== */
