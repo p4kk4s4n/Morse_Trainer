@@ -91,6 +91,14 @@ Learn how amateur radio operators actually communicate on the air:
 
 ---
 
+### 🔄 7. 2-Sided Morse Translator (Bottom Nav Tab)
+Open the **Translate** tab (`🔄`) in the bottom navigation bar anytime to convert between plain text and Morse code:
+- **`🔤 Text → Morse` Mode:** Type or paste any English text, numbers, punctuation, or callsigns (or tap a quick sample chip like `SOS`, `CQ DE W1AW`, `73 TU`) to see the full Morse string and an interactive **Sound Breakdown** strip where every character is shown with its dots/dashes and spoken rhythm (`dah-di-dah-dit`).
+- **`📡 Morse → Text (Keyer)` Mode:** Tap the on-screen **`● · DIT`** and **`▬ − DAH`** paddles (or press `.` and `-` on your keyboard, or paste raw `. - /` code directly) to decode Morse into plain text in real time with automatic pause-based letter commit.
+- **Audio & Haptic Playback:** Tap **`🔊 Hear All`** to listen to the entire message while each character card highlights in sync, or tap any individual character card to hear just that character.
+
+---
+
 ## 📱 Mobile-Friendly Controls & Settings
 
 Tap the **Settings** tab (gear icon) to customize your experience:
