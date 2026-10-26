@@ -1,9 +1,12 @@
 /* Offline support for the single-file app: precache index.html, serve cache-first, refresh in background. */
-const VERSION = 'v15';                      // bump when index.html changes to force an update
+const VERSION = 'v16';                      // bump when index.html changes to force an update
 const CACHE = 'morse-trainer-' + VERSION;
 const ASSETS = [
   './',
-  './index.html'
+  './index.html',
+  './manifest.webmanifest',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {
