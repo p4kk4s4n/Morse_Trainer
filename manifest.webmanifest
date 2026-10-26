@@ -1,10 +1,10 @@
 {
-  "id": "/Morse_Game/",
+  "id": "morse-game",
   "name": "Morse Trainer",
   "short_name": "Morse",
   "description": "Learn Morse code by ear with the Koch method. Works offline.",
-  "start_url": "/Morse_Game/",
-  "scope": "/Morse_Game/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0b1220",
