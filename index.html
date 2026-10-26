@@ -1793,15 +1793,16 @@ b { font-weight: 650; }
             pathname += '/';
           }
           const scope = url.origin + pathname;
+          const startUrl = scope + 'index.html';
           // Unique id to distinguish WebAPKs on shared domains like p4kk4s4n.github.io
-          const appId = pathname.length > 1 ? pathname : '/Morse_Game/';
+          const appId = pathname.length > 1 ? pathname.replace(/^\/|\/$/g, '') : 'morse-game';
 
           const manifest = {
             id: appId,
             name: 'Morse Trainer',
             short_name: 'Morse',
             description: 'Learn Morse code by ear with the Koch method. Works offline.',
-            start_url: scope,
+            start_url: startUrl,
             scope: scope,
             display: 'standalone',
             orientation: 'portrait',
