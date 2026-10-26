@@ -10,6 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="Morse Trainer">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20rx%3D%22110%22%20fill%3D%22%230b1220%22%2F%3E%3Crect%20x%3D%2240%22%20y%3D%2240%22%20width%3D%22432%22%20height%3D%22432%22%20rx%3D%2280%22%20fill%3D%22%23131c2f%22%20stroke%3D%22%2326334f%22%20stroke-width%3D%228%22%2F%3E%3Crect%20x%3D%2286%22%20y%3D%22226%22%20width%3D%22130%22%20height%3D%2260%22%20rx%3D%2230%22%20fill%3D%22%2338bdf8%22%2F%3E%3Crect%20x%3D%22240%22%20y%3D%22226%22%20width%3D%22130%22%20height%3D%2260%22%20rx%3D%2230%22%20fill%3D%22%2338bdf8%22%2F%3E%3Ccircle%20cx%3D%22416%22%20cy%3D%22256%22%20r%3D%2230%22%20fill%3D%22%2338bdf8%22%2F%3E%3C%2Fsvg%3E" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
   <title>Morse Trainer</title>
   <style>
 :root {
@@ -456,7 +457,7 @@ b { font-weight: 650; }
 (function (g) {
   const MT = (g.MT = g.MT || {});
 
-  MT.APP_VERSION = 'v15';
+  MT.APP_VERSION = 'v16';
 
   MT.CODE = {
     A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....',
@@ -1782,30 +1783,54 @@ b { font-weight: 650; }
           }
           touch.href = ic192;
         }
-        if (/^https?:$/.test(location.protocol) && ic192 && ic512) {
-          const base = location.href.split('#')[0].split('?')[0];
-          const scope = base.slice(0, base.lastIndexOf('/') + 1);
+        if (/^https?:$/.test(location.protocol)) {
+          const url = new URL(location.href);
+          let pathname = url.pathname;
+          // Ensure directory scope with trailing slash (prevents scope from collapsing to root /)
+          if (/\/[^/]+\.[^/]+$/.test(pathname)) {
+            pathname = pathname.slice(0, pathname.lastIndexOf('/') + 1);
+          } else if (!pathname.endsWith('/')) {
+            pathname += '/';
+          }
+          const scope = url.origin + pathname;
+          // Unique id to distinguish WebAPKs on shared domains like p4kk4s4n.github.io
+          const appId = pathname.length > 1 ? pathname : '/Morse_Game/';
+
           const manifest = {
+            id: appId,
             name: 'Morse Trainer',
             short_name: 'Morse',
             description: 'Learn Morse code by ear with the Koch method. Works offline.',
-            start_url: base,
+            start_url: scope,
             scope: scope,
             display: 'standalone',
             orientation: 'portrait',
             background_color: '#0b1220',
             theme_color: '#0b1220',
             icons: [
-              { src: ic192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-              { src: ic512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+              { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+              { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
             ]
           };
+          if (ic192 && ic512) {
+            manifest.icons.push(
+              { src: ic192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+              { src: ic512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+            );
+          }
+          App.manifest = manifest;
+
           let mLink = document.querySelector('link[rel="manifest"]');
           if (!mLink) {
-            mLink = h('link', { rel: 'manifest' });
+            mLink = h('link', { rel: 'manifest', href: 'manifest.webmanifest' });
             document.head.append(mLink);
           }
-          mLink.href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
+          // If already pointing to the persistent manifest.webmanifest endpoint, leave it intact
+          // so Chrome Android WebAPK minting server can fetch it cleanly!
+          const currentHref = mLink.getAttribute('href');
+          if (!currentHref || currentHref.startsWith('data:')) {
+            mLink.href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
+          }
         }
       } catch (e) { /* ignore canvas/manifest errors */ }
     },
@@ -1816,7 +1841,7 @@ b { font-weight: 650; }
       MT.Store.save();
       onStatus('Checking for latest version…');
 
-      const currentVer = MT.APP_VERSION || 'v14';
+      const currentVer = MT.APP_VERSION || 'v16';
 
       if (!/^https?:$/.test(location.protocol)) {
         const msg = currentVer + ' is latest release already';
