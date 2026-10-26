@@ -129,7 +129,7 @@ Open the **Progress** tab (bar chart icon) to inspect your stats:
 When a new version is pushed to GitHub Pages, you can update directly from within the app without losing your training progress, streak, or custom settings:
 
 1. Tap the **Settings** tab (⚙️ gear icon).
-2. Scroll down to the **"Data & offline"** section. You can see your currently installed version tag (e.g. `Version v14`).
+2. Scroll down to the **"Data & offline"** section. You can see your currently installed version tag (e.g. `Version v16`).
 3. Tap **"🔄 Check for update & reload"**.
 4. The app checks GitHub for the latest release, clears the offline file cache, and refreshes the app:
    - If an update is detected, a toast notification confirms: **`Update completed to version vX`**.
